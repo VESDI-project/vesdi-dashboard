@@ -1,0 +1,74 @@
+# VESDI Dashboard
+
+Municipal dashboard for visualizing CBS VESDI (Vehicle Emission Shipment Data Interface) freight transport data. Built for the [DMI Ecosysteem](https://dmi-ecosysteem.nl) project.
+
+## What is VESDI?
+
+In 2021, CBS (Statistics Netherlands) started developing the VESDI data platform in collaboration with the Ministry of I&W and Topsector Logistiek. VESDI collects data on urban freight transport movements across Dutch municipalities, covering shipments (zendingen) and trip segments (deelritten).
+
+More information: [CBS VESDI dossier](https://www.cbs.nl/nl-nl/dossier/vesdi)
+
+## Features
+
+- **Upload & auto-detect** — Drop CBS CSV/XLSX files; file types are detected automatically by column inspection
+- **14 dashboard pages** — Cover page, introduction, trends, national/international shipments & trips, route map, glossary, data completeness
+- **Interactive maps** — NUTS3 choropleth, PC4/PC6 bubble maps, ORS-powered route visualization
+- **Multi-city support** — Works with data from Utrecht, Amsterdam, Den Haag, Rotterdam, Almere, Zwolle and other municipalities
+- **Geographic precision** — PC6→PC4→NUTS3 fallback chain for centroid resolution (464K PC6 centroids)
+- **Client-side processing** — All data stays in the browser (IndexedDB), no server upload required
+- **Dutch language** — Full Dutch UI with tooltips and descriptions
+
+## Quick Start
+
+```bash
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) and drop your CBS VESDI data files.
+
+### Required Files
+
+| File | Description |
+|------|------------|
+| Zendingenbestand (CSV) | Shipment data per municipality per year |
+| Deelrittenbestand (CSV) | Trip segment data per municipality per year |
+| VESDI_lookup.xlsx | Reference tables (vehicle types, weight classes, etc.) |
+
+### Optional Files
+
+| File | Description |
+|------|------------|
+| Codetabel gemeente (CSV) | Municipality code → name mapping |
+| Codetabel klasse (CSV) | Logistics class code → name mapping |
+| NL_NUTS_schema (XLSX) | NUTS geographic classification |
+| Hero image (PNG/JPG) | Custom cover page image (auto-fetched from Wikipedia if not provided) |
+
+## Route Map
+
+The route map uses [OpenRouteService](https://openrouteservice.org/) for road network routing. By default it connects to a self-hosted instance. To configure:
+
+```env
+NEXT_PUBLIC_ORS_BASE_URL=https://your-ors-instance.com/ors
+NEXT_PUBLIC_ORS_API_KEY=your-api-key
+```
+
+Requests are proxied through `/api/ors` to avoid CORS issues and processed in parallel batches.
+
+## Tech Stack
+
+- **Next.js 16** (App Router) + React 19 + TypeScript 5
+- **Tailwind CSS 4** + shadcn/ui
+- **Recharts 3** for charts
+- **Leaflet** + React-Leaflet 5 for maps
+- **Zustand 5** with IndexedDB persistence
+- **PapaParse** (CSV) + **xlsx** (Excel)
+
+## License
+
+This project is licensed under the [GNU Affero General Public License v3.0](LICENSE).
+
+## Links
+
+- [DMI Ecosysteem](https://dmi-ecosysteem.nl)
+- [CBS VESDI dossier](https://www.cbs.nl/nl-nl/dossier/vesdi)

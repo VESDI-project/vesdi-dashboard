@@ -27,6 +27,8 @@ export const PAGE_DESCRIPTIONS = {
     'Verklarende woordenlijst van begrippen die in het VESDI-dashboard worden gebruikt.',
   dataVolledigheid:
     'Overzicht van de datakwaliteit en volledigheid per veld in de geladen bestanden.',
+  api:
+    'REST API-documentatie op basis van OpenAPI 3.0.3. Endpoints voor zendingen, deelritten, aggregaties en metadata.',
 } as const;
 
 export const KPI_TOOLTIPS = {

@@ -1,10 +1,28 @@
 'use client';
 
 import { DashboardSidebar } from '@/components/layout/dashboard-sidebar';
+import { SidebarProvider, useSidebar } from '@/components/layout/sidebar-context';
 import { useVesdiStore } from '@/lib/store';
 import Link from 'next/link';
 import { Upload, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+
+function DashboardContent({ children }: { children: React.ReactNode }) {
+  const { expanded } = useSidebar();
+
+  return (
+    <div className="min-h-screen bg-dmi-bg">
+      <DashboardSidebar />
+      <main className={cn(
+        'p-6 transition-all duration-200',
+        expanded ? 'ml-64' : 'ml-16'
+      )}>
+        {children}
+      </main>
+    </div>
+  );
+}
 
 export default function DashboardLayout({
   children,
@@ -48,9 +66,8 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-dmi-bg">
-      <DashboardSidebar />
-      <main className="ml-16 p-6">{children}</main>
-    </div>
+    <SidebarProvider>
+      <DashboardContent>{children}</DashboardContent>
+    </SidebarProvider>
   );
 }

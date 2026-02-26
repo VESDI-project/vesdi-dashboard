@@ -22,13 +22,14 @@ import {
 
 const NAV_BUTTONS = [
   { href: '/dashboard/trends', label: 'Overzicht en tendensen', icon: TrendingUp, color: '#A7BB54' },
+  { href: '/dashboard/zendingen-overzicht', label: 'Zendingen overzicht', icon: Map, color: '#A7BB54' },
   { href: '/dashboard/nationale-zendingen', label: 'Nationale zendingen', icon: Package, color: '#A7BB54' },
+  { href: '/dashboard/internationale-zendingen', label: 'Internationale zendingen', icon: Globe, color: '#8BA043' },
   { href: '/dashboard/nationale-deelritten', label: 'Nationale deelritten', icon: Truck, color: '#A7BB54' },
   { href: '/dashboard/nationale-deelritten-postcode', label: 'Nationale deelritten (postcode)', icon: MapPin, color: '#A7BB54' },
   { href: '/dashboard/routekaart', label: 'Nationale deelritten (routekaart)', icon: Route, color: '#A7BB54' },
   { href: '/dashboard/internationale-deelritten-overzicht', label: 'Internationale deelritten - overzicht', icon: Globe, color: '#8BA043' },
   { href: '/dashboard/internationale-deelritten', label: 'Internationale deelritten', icon: BarChart3, color: '#8BA043' },
-  { href: '/dashboard/internationale-zendingen', label: 'Internationale zendingen', icon: Map, color: '#8BA043' },
   { href: '/dashboard/externe-links', label: 'Links', icon: Link2, color: '#8BA043' },
   { href: '/dashboard/definities', label: 'Definities', icon: BookOpen, color: '#5C6B2F' },
   { href: '/dashboard/data-volledigheid', label: 'Data volledigheid', icon: CheckCircle, color: '#5C6B2F' },
@@ -37,6 +38,7 @@ const NAV_BUTTONS = [
 export default function IntroductiePage() {
   const municipality = useVesdiStore((s) => s.municipality);
   const years = useVesdiStore((s) => s.years);
+  const sortedYears = [...years].sort((a, b) => a - b);
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -50,7 +52,7 @@ export default function IntroductiePage() {
         {/* Main text */}
         <div className="lg:col-span-2 space-y-6">
           <Card className="p-6">
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-3 mb-6">
               <img
                 src="/images/dmi-logo.svg"
                 alt="DMI Ecosysteem"
@@ -62,16 +64,28 @@ export default function IntroductiePage() {
               Gemeentelijk VESDI-dashboard
             </h2>
 
-            <div className="space-y-4 text-sm text-dmi-text/80 leading-relaxed">
+            <div className="space-y-5 text-sm text-dmi-text/80 leading-relaxed">
+              <p>
+                In 2021 startte het CBS, in opdracht van het Ministerie van I&W en in
+                samenwerking met de Topsector Logistiek, met de ontwikkeling van het
+                dataplatform VESDI (Vehicle Emission Shipment Data Interface). E&eacute;n
+                van de thema&apos;s die hierin centraal staat, is het wegvervoer van goederen.
+              </p>
+
               <div>
                 <h3 className="font-semibold text-dmi-text mb-1">
                   VESDI zendingen en deelritten
                 </h3>
                 <p>
-                  Het VESDI-databestand bevat informatie over de goederenstromen in Nederland.
-                  De data is opgedeeld in twee bestanden: <strong>zendingen</strong> (pakket van
-                  herkomst naar bestemming) en <strong>deelritten</strong> (vervoersbewegingen
-                  per voertuig).
+                  VESDI verzamelt gegevens over goederenstromen in twee datasets. De eerste
+                  is op zendingniveau, waarbij een zending het verplaatsen van goederen van
+                  A naar B betreft. Deze dataset maakt het mogelijk goederen te traceren. De
+                  tweede dataset is op deelritniveau: dit betreft het segment van de rit
+                  tussen twee stops van het voertuig. Deze gegevens zijn waardevol voor het
+                  analyseren van voertuigbewegingen. Beide datasets bevatten informatie zoals
+                  stadslogistieke klasse, laad- en loslocaties (inclusief of deze zich in
+                  emissiezones bevinden), beladingsgraad, voertuigtype, brandstofsoort en
+                  emissieklasse.
                 </p>
               </div>
 
@@ -80,8 +94,18 @@ export default function IntroductiePage() {
                   Dataverzameling
                 </h3>
                 <p>
-                  De data is afkomstig van Transport Management Systemen (TMS) en
-                  routenavigatie-software van logistieke dienstverleners en vervoerders.
+                  De VESDI dataset over goederenvervoer over de weg is grotendeels gebaseerd
+                  op een steekproef waarbij kentekens van voertuigen worden geselecteerd. Dit
+                  gebeurt op basis van verschillende kenmerken, zoals laadvermogen en
+                  voertuigtype. Elk jaar wordt van een aantal kentekens gedurende &eacute;&eacute;n
+                  week data verzameld. De data wordt verzameld via een internetvragenlijst en
+                  automatisch via Transport Management Systemen van bedrijven. De meeste
+                  gegevens, zoals de locatie van goederen en de route, worden automatisch
+                  gecodeerd. Slechts een klein deel van de data wordt handmatig gecontroleerd
+                  en gecorrigeerd.
+                </p>
+                <p className="mt-3">
+                  Dit dashboard bevat geen bestelbusdata.
                 </p>
               </div>
 
@@ -90,11 +114,37 @@ export default function IntroductiePage() {
                   Verslagperiode
                 </h3>
                 <p>
-                  Dit dashboard bevat data over de jaren {years.join(', ')} voor gemeente{' '}
-                  <strong>
-                    {municipality?.name || 'Onbekend'} (GM{municipality?.code || '????'})
-                  </strong>
-                  .
+                  Voor het opstellen van dit dashboard is de VESDI data van{' '}
+                  {sortedYears.length > 0
+                    ? sortedYears.join(', ')
+                    : '...'}{' '}
+                  gebruikt.
+                  {sortedYears.length > 1 && (
+                    <> De bestanden betreffende{' '}
+                    {sortedYears.slice(1).join(' en ')}{' '}
+                    bevatten alleen informatie over vervoersbewegingen waarvan de los- en/of
+                    laadlocatie zich in de gemeente{' '}
+                    <strong>
+                      {municipality?.name || 'Onbekend'} (gemeentecode{' '}
+                      {municipality?.code || '????'})
+                    </strong>{' '}
+                    bevindt. Om de data zo vergelijkbaar mogelijk te houden, zijn de bestanden
+                    van {sortedYears[0]} aangepast om ook aan deze voorwaarde te voldoen.</>
+                  )}
+                  {sortedYears.length <= 1 && (
+                    <> De bestanden bevatten informatie over vervoersbewegingen waarvan de
+                    los- en/of laadlocatie zich in de gemeente{' '}
+                    <strong>
+                      {municipality?.name || 'Onbekend'} (gemeentecode{' '}
+                      {municipality?.code || '????'})
+                    </strong>{' '}
+                    bevindt.</>
+                  )}
+                </p>
+                <p className="mt-3">
+                  Automatisch zal de data van het meest recente jaar getoond worden. Het
+                  filter linksbovenin op pagina&apos;s met data kan gebruikt worden om dit
+                  aan te passen.
                 </p>
               </div>
             </div>

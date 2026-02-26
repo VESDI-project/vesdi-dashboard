@@ -6,11 +6,13 @@ import type {
   ZendingRow,
   DeelritRow,
   LookupData,
+  LookupEntry,
   MunicipalityInfo,
   FilterState,
   DetectedFile,
   NutsMapping,
 } from './types';
+import { syncToServer } from './sync-client';
 import { parseCSV, readFileAsText, readFileAsArrayBuffer } from './parse-csv';
 import { parseLookupXlsx, parseNutsSchema } from './parse-xlsx';
 import { detectFileType } from './validate';
@@ -71,6 +73,58 @@ async function fileToDataURL(file: File): Promise<string> {
   });
 }
 
+// CBS uses official names that differ from common/Wikipedia names
+const WIKI_NAME_MAP: Record<string, string[]> = {
+  "'s-Gravenhage": ['Den Haag'],
+  "'s-Hertogenbosch": ['Den Bosch'],
+  "Leeuwarden": ['Leeuwarden (stad)'],
+  "Súdwest-Fryslân": ['Súdwest-Fryslân'],
+};
+
+/**
+ * Fetch a city image from the Dutch Wikipedia API.
+ * Uses the page summary endpoint which returns the main article image.
+ * Wikipedia content is moderated, CC-licensed, and safe.
+ */
+async function fetchCityImage(cityName: string): Promise<string | null> {
+  // Strip common suffixes like "(gemeente)", "(stad)", "(dorp)" and normalize quotes
+  const normalized = cityName
+    .replace(/\s*\(gemeente\)|\s*\(stad\)|\s*\(dorp\)/gi, '')
+    .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
+    .trim();
+  // Build list of names to try: normalized + known alternatives
+  const alternatives = WIKI_NAME_MAP[normalized] || WIKI_NAME_MAP[cityName] || [];
+  const namesToTry = [normalized, ...alternatives];
+
+  for (const name of namesToTry) {
+    try {
+      const encodedName = encodeURIComponent(name);
+      // Try Dutch Wikipedia first
+      const res = await fetch(
+        `https://nl.wikipedia.org/api/rest_v1/page/summary/${encodedName}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data.originalimage?.source) return data.originalimage.source;
+        if (data.thumbnail?.source) return data.thumbnail.source;
+      }
+
+      // Fallback: try English Wikipedia
+      const resEn = await fetch(
+        `https://en.wikipedia.org/api/rest_v1/page/summary/${encodedName}`
+      );
+      if (resEn.ok) {
+        const dataEn = await resEn.json();
+        if (dataEn.originalimage?.source) return dataEn.originalimage.source;
+        if (dataEn.thumbnail?.source) return dataEn.thumbnail.source;
+      }
+    } catch {
+      // Network error — try next name
+    }
+  }
+  return null;
+}
+
 export const useVesdiStore = create<VesdiStore>()(
   persist(
     (set, get) => ({
@@ -116,6 +170,53 @@ export const useVesdiStore = create<VesdiStore>()(
           const buffer = await readFileAsArrayBuffer(nutsFile.file);
           const nutsMapping = parseNutsSchema(buffer);
           set({ nutsMapping });
+        }
+
+        // Parse CSV codetables and merge into lookup
+        const gemeenteFile = detected.find((d) => d.type === 'CODETABEL_GEMEENTE');
+        const klasseFile = detected.find((d) => d.type === 'CODETABEL_KLASSE');
+
+        if (gemeenteFile || klasseFile) {
+          // Ensure a lookup object exists (create empty shell if no XLSX was loaded)
+          if (!lookup) {
+            lookup = {
+              voertuigsoortRDW: [],
+              brandstofsoort: [],
+              laadvermogenCombinatie: [],
+              maxToegestaanGewicht: [],
+              leeggewichtCombinatie: [],
+              logistiekeKlasse: [],
+              legeRit: [],
+              nuts3: [],
+              gemeentecode: [],
+            };
+          }
+
+          if (gemeenteFile) {
+            set({ processingStatus: 'Gemeente-codetabel verwerken...' });
+            const text = await readFileAsText(gemeenteFile.file);
+            const { data } = parseCSV<{ gemNaam: string; gemCode: string | number }>(text);
+            const entries: LookupEntry[] = data.map((row) => ({
+              code: String(row.gemCode).padStart(4, '0'),
+              omschrijving: String(row.gemNaam),
+            }));
+            // Merge: CSV entries replace/extend existing gemeentecode list
+            lookup = { ...lookup, gemeentecode: entries };
+          }
+
+          if (klasseFile) {
+            set({ processingStatus: 'Klasse-codetabel verwerken...' });
+            const text = await readFileAsText(klasseFile.file);
+            const { data } = parseCSV<{ stadslogistieke_klasse_code: number; stadslogistieke_klasse: string }>(text);
+            const entries: LookupEntry[] = data.map((row) => ({
+              code: Number(row.stadslogistieke_klasse_code),
+              omschrijving: String(row.stadslogistieke_klasse),
+            }));
+            // Merge: CSV entries replace/extend existing logistiekeKlasse list
+            lookup = { ...lookup, logistiekeKlasse: entries };
+          }
+
+          set({ lookup });
         }
 
         // Phase 3: Parse data CSVs
@@ -174,7 +275,7 @@ export const useVesdiStore = create<VesdiStore>()(
                   (e) => String(e.code) === maxCode || String(e.code).padStart(4, '0') === maxCode
                 );
                 const nutsEntry = get().nutsMapping.find(
-                  (n) => n.gemeentecode === maxCode || n.gemeentecode === maxCode.padStart(4, '0')
+                  (n) => n.gemeentecode === String(maxCode) || n.gemeentecode === String(maxCode).padStart(4, '0')
                 );
                 let filenameName = '';
                 const allDetected = [...previousFiles, ...detected];
@@ -192,11 +293,15 @@ export const useVesdiStore = create<VesdiStore>()(
           }
         }
 
-        // Handle hero image — store as data URL (base64) so it persists
+        // Handle hero image — manual upload takes priority, then auto-fetch from Wikipedia
         const heroFile = detected.find((d) => d.type === 'HERO_IMAGE');
         let heroImage = get().heroImage;
         if (heroFile) {
           heroImage = await fileToDataURL(heroFile.file);
+        } else if (!heroImage && municipality) {
+          // No manual hero image — try to fetch one from Wikipedia
+          const wikiImage = await fetchCityImage(municipality.name);
+          if (wikiImage) heroImage = wikiImage;
         }
 
         set({
@@ -209,6 +314,18 @@ export const useVesdiStore = create<VesdiStore>()(
           processingStatus: 'Klaar!',
           filters: { ...defaultFilters, year: years[years.length - 1] || null },
         });
+
+        // Fire-and-forget sync to PostgreSQL (if server is available)
+        if (municipality) {
+          syncToServer({
+            municipality,
+            years,
+            zendingenByYear: Object.fromEntries(zendingenByYear),
+            deelrittenByYear: Object.fromEntries(deelrittenByYear),
+            lookup: get().lookup,
+            nutsMapping: get().nutsMapping,
+          }).catch((err) => console.warn('[sync] Server sync skipped:', err?.message || err));
+        }
       },
 
       setFilter: (key, value) => {
@@ -282,6 +399,14 @@ export const useVesdiStore = create<VesdiStore>()(
         return () => {
           // Mark as hydrated after rehydration completes
           useVesdiStore.setState({ _hydrated: true });
+
+          // Auto-fetch city image if municipality exists but no hero image yet
+          const { municipality, heroImage } = useVesdiStore.getState();
+          if (municipality && !heroImage) {
+            fetchCityImage(municipality.name).then((url) => {
+              if (url) useVesdiStore.setState({ heroImage: url });
+            });
+          }
         };
       },
     }

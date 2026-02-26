@@ -8,8 +8,7 @@ import { ROUTE_HEAT_COLORS } from '@/lib/colors';
 import { Card } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 
-const ORS_BASE_URL = process.env.NEXT_PUBLIC_ORS_BASE_URL || 'https://api.openrouteservice.org';
-const ORS_API_KEY = process.env.NEXT_PUBLIC_ORS_API_KEY || '';
+const ORS_PROFILE = 'driving-hgv';
 
 interface RouteSegment {
   coordinates: [number, number][];
@@ -25,9 +24,9 @@ interface Centroid {
   lng: number;
 }
 
-interface PC4PairAgg {
-  laadPC4: string;
-  losPC4: string;
+interface GeoKeyPairAgg {
+  fromKey: string;
+  toKey: string;
   count: number;
   euro6Count: number;
   euro05Count: number;
@@ -85,12 +84,9 @@ async function fetchRoute(
   if (cache[cacheKey]) return cache[cacheKey];
 
   try {
-    const res = await fetch(`${ORS_BASE_URL}/v2/directions/driving-hgv/geojson`, {
+    const res = await fetch(`/api/ors?profile=${ORS_PROFILE}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: ORS_API_KEY,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         coordinates: [
           [fromLng, fromLat],
@@ -118,30 +114,80 @@ async function fetchRoute(
   }
 }
 
-interface RouteMapProps {
-  height?: number;
-  onLegendData?: (maxCount: number) => void;
+/** Load PC6, PC4 and NUTS3 centroid files and return a unified resolver */
+async function loadCentroids(): Promise<Record<string, Centroid>> {
+  const combined: Record<string, Centroid> = {};
+
+  // Load all three in parallel
+  const [pc6Res, pc4Res, nuts3Res] = await Promise.allSettled([
+    fetch('/geo/pc6-centroids.json'),
+    fetch('/geo/pc4-centroids.json'),
+    fetch('/geo/nuts3-centroids.json'),
+  ]);
+
+  // PC6 centroids (format: {"1234AB": [lat, lng], ...})
+  if (pc6Res.status === 'fulfilled' && pc6Res.value.ok) {
+    try {
+      const pc6Data: Record<string, [number, number]> = await pc6Res.value.json();
+      for (const [code, coords] of Object.entries(pc6Data)) {
+        combined[code] = { lat: coords[0], lng: coords[1] };
+      }
+    } catch {
+      // PC6 parse error
+    }
+  }
+
+  // PC4 centroids (format: {"1234": {lat, lng}, ...})
+  if (pc4Res.status === 'fulfilled' && pc4Res.value.ok) {
+    try {
+      const pc4Data: Record<string, Centroid> = await pc4Res.value.json();
+      Object.assign(combined, pc4Data);
+    } catch {
+      // PC4 parse error
+    }
+  }
+
+  // NUTS3 centroids (keyed as "NUTS3:XX123")
+  if (nuts3Res.status === 'fulfilled' && nuts3Res.value.ok) {
+    try {
+      const nuts3Data: Record<string, Centroid> = await nuts3Res.value.json();
+      for (const [code, centroid] of Object.entries(nuts3Data)) {
+        combined[`NUTS3:${code}`] = centroid;
+      }
+    } catch {
+      // NUTS3 parse error
+    }
+  }
+
+  return combined;
 }
 
-export function RouteMap({ height = 500, onLegendData }: RouteMapProps) {
+interface RouteMapProps {
+  height?: number;
+  maxRoutes?: number;
+  onLegendData?: (maxCount: number) => void;
+  onTotalPairs?: (total: number) => void;
+}
+
+export function RouteMap({ height = 500, maxRoutes = 200, onLegendData, onTotalPairs }: RouteMapProps) {
   const deelrittenByYear = useVesdiStore((s) => s.deelrittenByYear);
   const [segments, setSegments] = useState<RouteSegment[]>([]);
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
 
-  // Aggregate unique PC4 pairs across all years with Euro + klasse breakdown
-  const pc4Pairs = useMemo((): PC4PairAgg[] => {
-    const map = new Map<string, PC4PairAgg>();
+  // Aggregate unique geo key pairs across all years with Euro + klasse breakdown
+  const geoKeyPairs = useMemo((): GeoKeyPairAgg[] => {
+    const map = new Map<string, GeoKeyPairAgg>();
     for (const rows of deelrittenByYear.values()) {
       for (const r of rows) {
         if (!r.isNational) continue;
-        const laad = r.PC4LaadNL;
-        const los = r.PC4LosNL;
-        if (!laad || !los || laad === los) continue;
-        const key = `${laad}-${los}`;
+        const from = r.geoKeyLaad;
+        const to = r.geoKeyLos;
+        if (!from || !to || from === to) continue;
+        const key = `${from}->${to}`;
         let agg = map.get(key);
         if (!agg) {
-          agg = { laadPC4: laad, losPC4: los, count: 0, euro6Count: 0, euro05Count: 0, klasseMap: new Map() };
+          agg = { fromKey: from, toKey: to, count: 0, euro6Count: 0, euro05Count: 0, klasseMap: new Map() };
           map.set(key, agg);
         }
         agg.count += r.aantalDeelritten;
@@ -154,80 +200,95 @@ export function RouteMap({ height = 500, onLegendData }: RouteMapProps) {
         agg.klasseMap.set(klasse, (agg.klasseMap.get(klasse) || 0) + r.aantalDeelritten);
       }
     }
-    return [...map.values()]
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 200);
-  }, [deelrittenByYear]);
+    const sorted = [...map.values()].sort((a, b) => b.count - a.count);
+    onTotalPairs?.(sorted.length);
+    return maxRoutes > 0 ? sorted.slice(0, maxRoutes) : sorted;
+  }, [deelrittenByYear, maxRoutes, onTotalPairs]);
 
   const fetchRoutes = useCallback(async () => {
-    if (pc4Pairs.length === 0) {
+    if (geoKeyPairs.length === 0) {
       setLoading(false);
       return;
     }
 
-    let centroidMap: Record<string, Centroid>;
-    try {
-      const res = await fetch('/geo/pc4-centroids.json');
-      centroidMap = await res.json();
-    } catch {
+    const centroidMap = await loadCentroids();
+    if (Object.keys(centroidMap).length === 0) {
       setLoading(false);
       return;
     }
 
-    const maxCount = Math.max(...pc4Pairs.map((p) => p.count));
+    const maxCount = Math.max(...geoKeyPairs.map((p) => p.count));
     onLegendData?.(maxCount);
     const results: RouteSegment[] = [];
-    setProgress({ done: 0, total: pc4Pairs.length });
+    setProgress({ done: 0, total: geoKeyPairs.length });
 
-    for (let i = 0; i < pc4Pairs.length; i++) {
-      const pair = pc4Pairs[i];
-      const from = centroidMap[pair.laadPC4];
-      const to = centroidMap[pair.losPC4];
-
-      if (!from || !to) continue;
-
-      let coords: [number, number][] | null = null;
-
-      if (ORS_API_KEY) {
-        coords = await fetchRoute(from.lat, from.lng, to.lat, to.lng);
-        if (i > 0 && i % 35 === 0) {
-          await new Promise((resolve) => setTimeout(resolve, 60000));
-        }
+    // Resolve centroid with PC6→PC4 fallback
+    const resolveCentroid = (key: string): Centroid | undefined => {
+      if (centroidMap[key]) return centroidMap[key];
+      // If key looks like a PC6 (4 digits + 2 letters), fall back to PC4
+      if (/^\d{4}[A-Z]{2}$/i.test(key)) {
+        return centroidMap[key.substring(0, 4)];
       }
+      return undefined;
+    };
 
-      if (!coords || coords.length === 0) {
-        coords = [
-          [from.lat, from.lng],
-          [to.lat, to.lng],
-        ];
-      }
+    // Pre-resolve centroids and filter out pairs without valid locations
+    const resolvedPairs = geoKeyPairs
+      .map((pair) => ({
+        pair,
+        from: resolveCentroid(pair.fromKey),
+        to: resolveCentroid(pair.toKey),
+      }))
+      .filter((p): p is typeof p & { from: Centroid; to: Centroid } => !!p.from && !!p.to);
 
-      // Top 3 klassen
-      const topKlassen = [...pair.klasseMap.entries()]
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 3)
-        .map(([klasse, count]) => ({
-          klasse,
-          count,
-          pct: pair.count > 0 ? Math.round((count / pair.count) * 100) : 0,
-        }));
+    setProgress({ done: 0, total: resolvedPairs.length });
+    let done = 0;
 
-      results.push({
-        coordinates: coords,
-        count: pair.count,
-        color: getHeatColor(pair.count, maxCount),
-        euro6Count: pair.euro6Count,
-        euro05Count: pair.euro05Count,
-        topKlassen,
-      });
+    // Process in parallel batches of 10
+    const BATCH_SIZE = 10;
+    for (let batchStart = 0; batchStart < resolvedPairs.length; batchStart += BATCH_SIZE) {
+      const batch = resolvedPairs.slice(batchStart, batchStart + BATCH_SIZE);
 
-      setProgress({ done: i + 1, total: pc4Pairs.length });
+      const batchResults = await Promise.all(
+        batch.map(async ({ pair, from, to }) => {
+          let coords = await fetchRoute(from.lat, from.lng, to.lat, to.lng);
+
+          if (!coords || coords.length === 0) {
+            coords = [
+              [from.lat, from.lng],
+              [to.lat, to.lng],
+            ];
+          }
+
+          const topKlassen = [...pair.klasseMap.entries()]
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 3)
+            .map(([klasse, count]) => ({
+              klasse,
+              count,
+              pct: pair.count > 0 ? Math.round((count / pair.count) * 100) : 0,
+            }));
+
+          return {
+            coordinates: coords,
+            count: pair.count,
+            color: getHeatColor(pair.count, maxCount),
+            euro6Count: pair.euro6Count,
+            euro05Count: pair.euro05Count,
+            topKlassen,
+          };
+        })
+      );
+
+      results.push(...batchResults);
+      done += batch.length;
+      setProgress({ done, total: resolvedPairs.length });
     }
 
     results.sort((a, b) => a.count - b.count);
     setSegments(results);
     setLoading(false);
-  }, [pc4Pairs, onLegendData]);
+  }, [geoKeyPairs, onLegendData]);
 
   useEffect(() => {
     fetchRoutes();

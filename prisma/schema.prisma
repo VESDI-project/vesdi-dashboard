@@ -1,0 +1,189 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Top-level container for a municipality's data ───
+model Dataset {
+  id               String   @id @default(cuid())
+  municipalityCode String
+  municipalityName String
+  years            Int[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  zendingen     Zending[]
+  deelritten    Deelrit[]
+  lookupEntries LookupEntry[]
+  nutsMappings  NutsMappingRow[]
+
+  @@unique([municipalityCode])
+  @@map("datasets")
+}
+
+// ─── Zendingen (shipments) ───
+model Zending {
+  id        Int     @id @default(autoincrement())
+  datasetId String
+  dataset   Dataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  // Raw fields
+  jaar                         Int
+  laadPC6                      String
+  laadPC4                      String
+  laadGemeente                 String
+  laadNuts3                    String
+  losPC6                       String
+  losPC4                       String
+  losGemeente                  String
+  losNuts3                     String
+  stadslogistieke_klasse_code  Int
+  euronormKlasse               String
+  brandstofsoortKlasse         Int
+  dummy_laadInROI              Int
+  dummy_losInROI               Int
+  zendingAantal                Int
+  brutoGewicht                 Float
+  zendingAfstandGemiddeld      Float
+
+  // Optional zone fields
+  laad_zone_emissiezonePC6          String?
+  laad_zone_voetganger              String?
+  laad_zone_afgesloten_laden_lossen String?
+  laad_zone_afgesloten              String?
+  los_zone_emissiezonePC6           String?
+  los_zone_voetganger               String?
+  los_zone_afgesloten_laden_lossen  String?
+  los_zone_afgesloten               String?
+
+  // Derived fields
+  LaadLand               String?
+  LosLand                String?
+  PC4LaadNL              String?
+  PC4LosNL               String?
+  geoKeyLaad             String?
+  geoKeyLos              String?
+  geoLevelLaad           String?
+  geoLevelLos            String?
+  isNational             Boolean?
+  isInternational        Boolean?
+  isImport               Boolean?
+  isExport               Boolean?
+  stadslogistieke_klasse String?
+
+  @@index([datasetId, jaar])
+  @@index([datasetId, jaar, euronormKlasse])
+  @@index([datasetId, jaar, isNational])
+  @@index([datasetId, laadNuts3])
+  @@index([datasetId, losNuts3])
+  @@index([datasetId, laadGemeente])
+  @@index([datasetId, losGemeente])
+  @@map("zendingen")
+}
+
+// ─── Deelritten (trip segments) ───
+model Deelrit {
+  id        Int     @id @default(autoincrement())
+  datasetId String
+  dataset   Dataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  // Raw fields
+  jaar                              Int
+  voertuigsoortRDW                  Int
+  laadPC6                           String
+  laadPC4                           String
+  laadGemeente                      String
+  laadNuts3                         String
+  losPC6                            String
+  losPC4                            String
+  losGemeente                       String
+  losNuts3                          String
+  stadslogistieke_klasse_code       Int
+  stadslogistieke_klasse_legeRit_code String
+  euronormKlasse                    String
+  brandstofsoortKlasse              Int
+  laadvermogenCombinatie_klasse     String
+  leeggewichtCombinatie_klasse      String
+  maxToegestaanGewicht_klasse       String
+  dummy_laadInROI                   Int
+  dummy_losInROI                    Int
+  aantalDeelritten                  Int
+  aantalLegeDeelritten              Int
+  brutoGewicht                      Float
+  deelritAfstandGemiddeld           Float
+  beladingsgraadGewichtGemiddeld    Float
+  aantalZendingenRitGemiddeld       Float
+
+  // Optional zone fields
+  laad_zone_emissiezonePC6          String?
+  laad_zone_voetganger              String?
+  laad_zone_afgesloten_laden_lossen String?
+  laad_zone_afgesloten              String?
+  los_zone_emissiezonePC6           String?
+  los_zone_voetganger               String?
+  los_zone_afgesloten_laden_lossen  String?
+  los_zone_afgesloten               String?
+
+  // Derived fields
+  LaadLand               String?
+  LosLand                String?
+  PC4LaadNL              String?
+  PC4LosNL               String?
+  geoKeyLaad             String?
+  geoKeyLos              String?
+  geoLevelLaad           String?
+  geoLevelLos            String?
+  isNational             Boolean?
+  isInternational        Boolean?
+  isImport               Boolean?
+  isExport               Boolean?
+  stadslogistieke_klasse String?
+  voertuigsoort          String?
+
+  @@index([datasetId, jaar])
+  @@index([datasetId, jaar, euronormKlasse])
+  @@index([datasetId, jaar, isNational])
+  @@index([datasetId, laadNuts3])
+  @@index([datasetId, losNuts3])
+  @@index([datasetId, laadGemeente])
+  @@index([datasetId, losGemeente])
+  @@index([datasetId, jaar, voertuigsoortRDW])
+  @@map("deelritten")
+}
+
+// ─── Lookup entries (polymorphic: all 9 lookup tables in one) ───
+model LookupEntry {
+  id        Int     @id @default(autoincrement())
+  datasetId String
+  dataset   Dataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  tableName    String
+  code         String
+  omschrijving String
+
+  @@index([datasetId, tableName])
+  @@unique([datasetId, tableName, code])
+  @@map("lookup_entries")
+}
+
+// ─── NUTS mapping (gemeente → NUTS hierarchy) ───
+model NutsMappingRow {
+  id        Int     @id @default(autoincrement())
+  datasetId String
+  dataset   Dataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  gemeentecode String
+  gemeentenaam String
+  nuts1        String
+  nuts2        String
+  nuts3        String
+  degurba      Int
+
+  @@index([datasetId])
+  @@unique([datasetId, gemeentecode])
+  @@map("nuts_mappings")
+}

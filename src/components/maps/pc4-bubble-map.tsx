@@ -21,6 +21,7 @@ interface PC4BubbleMapProps {
   data: PC4BubbleData[];
   color?: string;
   height?: number;
+  level?: 'PC4' | 'PC6';
 }
 
 export function PC4BubbleMap({
@@ -28,19 +29,32 @@ export function PC4BubbleMap({
   data,
   color = '#004D6E',
   height = 300,
+  level = 'PC4',
 }: PC4BubbleMapProps) {
   const [centroids, setCentroids] = useState<Record<string, Centroid>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/geo/pc4-centroids.json')
+    const file = level === 'PC6' ? '/geo/pc6-centroids.json' : '/geo/pc4-centroids.json';
+    setLoading(true);
+    fetch(file)
       .then((res) => res.json())
-      .then((data: Record<string, Centroid>) => {
-        setCentroids(data);
+      .then((raw) => {
+        if (level === 'PC6') {
+          // PC6 format: {"1234AB": [lat, lng], ...}
+          const mapped: Record<string, Centroid> = {};
+          for (const [code, coords] of Object.entries(raw as Record<string, [number, number]>)) {
+            mapped[code] = { lat: coords[0], lng: coords[1] };
+          }
+          setCentroids(mapped);
+        } else {
+          // PC4 format: {"1234": {lat, lng}, ...}
+          setCentroids(raw as Record<string, Centroid>);
+        }
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [level]);
 
   const maxCount = useMemo(
     () => Math.max(...data.map((d) => d.count), 1),
@@ -77,10 +91,12 @@ export function PC4BubbleMap({
     );
   }
 
+  const levelLabel = level === 'PC6' ? 'PC6' : 'PC4';
+
   return (
     <Card className="p-2">
       {title && <h3 className="text-sm font-semibold text-dmi-text px-2 mb-2">{title}</h3>}
-      <DynamicMap center={center} zoom={11} height={height - 40}>
+      <DynamicMap center={center} zoom={level === 'PC6' ? 13 : 11} height={height - 40}>
         {mappedData.map((d) => {
           const radius = Math.max(3, Math.sqrt(d.count / maxCount) * 20);
           return (
@@ -97,7 +113,7 @@ export function PC4BubbleMap({
               }}
             >
               <Tooltip sticky>
-                <strong>PC4 {d.pc4}</strong>
+                <strong>{levelLabel} {d.pc4}</strong>
                 <br />
                 Aantal: {d.count.toLocaleString('nl-NL')}
                 <br />

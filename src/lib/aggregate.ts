@@ -349,6 +349,50 @@ export function deelrittenPerPC4Los(rows: DeelritRow[]): PC4Data[] {
     .sort((a, b) => b.count - a.count);
 }
 
+export function deelrittenPerPC6Laad(rows: DeelritRow[]): PC4Data[] {
+  const map = new Map<string, { count: number; weight: number; beladSum: number }>();
+  for (const r of rows) {
+    const pc6 = r.laadPC6;
+    if (!pc6 || String(pc6).trim().length < 6) continue;
+    const key = String(pc6).trim();
+    const current = map.get(key) || { count: 0, weight: 0, beladSum: 0 };
+    current.count += r.aantalDeelritten;
+    current.weight += r.brutoGewicht;
+    current.beladSum += (r.beladingsgraadGewichtGemiddeld / 100) * r.aantalDeelritten;
+    map.set(key, current);
+  }
+  return [...map.entries()]
+    .map(([pc4, v]) => ({
+      pc4,
+      count: v.count,
+      weight: v.weight,
+      beladingsgraad: v.count > 0 ? v.beladSum / v.count : 0,
+    }))
+    .sort((a, b) => b.count - a.count);
+}
+
+export function deelrittenPerPC6Los(rows: DeelritRow[]): PC4Data[] {
+  const map = new Map<string, { count: number; weight: number; beladSum: number }>();
+  for (const r of rows) {
+    const pc6 = r.losPC6;
+    if (!pc6 || String(pc6).trim().length < 6) continue;
+    const key = String(pc6).trim();
+    const current = map.get(key) || { count: 0, weight: 0, beladSum: 0 };
+    current.count += r.aantalDeelritten;
+    current.weight += r.brutoGewicht;
+    current.beladSum += (r.beladingsgraadGewichtGemiddeld / 100) * r.aantalDeelritten;
+    map.set(key, current);
+  }
+  return [...map.entries()]
+    .map(([pc4, v]) => ({
+      pc4,
+      count: v.count,
+      weight: v.weight,
+      beladingsgraad: v.count > 0 ? v.beladSum / v.count : 0,
+    }))
+    .sort((a, b) => b.count - a.count);
+}
+
 // ─── Emissiezone donut data ───
 
 export function emissiezoneDistribution(

@@ -49,57 +49,57 @@ export default function ZendingenOverzichtPage() {
       />
       <FilterBar />
 
+      {/* KPI totals — always visible */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <KPICard
+          label="Gewicht (naar)"
+          value={formatLargeNumber(kpisNaar.brutoGewicht)}
+          color={DMI_COLORS.primary}
+          tooltip={KPI_TOOLTIPS.brutoGewicht}
+        />
+        <KPICard
+          label="Zendingen (naar)"
+          value={formatLargeNumber(kpisNaar.zendingAantal)}
+          color={DMI_COLORS.primary}
+          tooltip={KPI_TOOLTIPS.zendingAantal}
+        />
+        <KPICard
+          label="Gewicht (vanuit)"
+          value={formatLargeNumber(kpisVanuit.brutoGewicht)}
+          color={DMI_COLORS.teal}
+          tooltip={KPI_TOOLTIPS.brutoGewicht}
+        />
+        <KPICard
+          label="Zendingen (vanuit)"
+          value={formatLargeNumber(kpisVanuit.zendingAantal)}
+          color={DMI_COLORS.teal}
+          tooltip={KPI_TOOLTIPS.zendingAantal}
+        />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left: naar de gemeente */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           <h3 className="text-sm font-semibold text-dmi-text">
             Percentage zendingen naar de gemeente, per NUTS3-laadlocatie
           </h3>
           <Nuts3Choropleth
             data={naarGemeente}
             colorScale="teal"
-            height={400}
+            height={320}
           />
-          <div className="grid grid-cols-2 gap-3">
-            <KPICard
-              label="Bruto gewicht"
-              value={formatLargeNumber(kpisNaar.brutoGewicht)}
-              color={DMI_COLORS.primary}
-              tooltip={KPI_TOOLTIPS.brutoGewicht}
-            />
-            <KPICard
-              label="Aantal zendingen"
-              value={formatLargeNumber(kpisNaar.zendingAantal)}
-              color={DMI_COLORS.primary}
-              tooltip={KPI_TOOLTIPS.zendingAantal}
-            />
-          </div>
         </div>
 
         {/* Right: vanuit de gemeente */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           <h3 className="text-sm font-semibold text-dmi-text">
             Percentage zendingen vanuit de gemeente, per NUTS3-loslocatie
           </h3>
           <Nuts3Choropleth
             data={vanuitGemeente}
             colorScale="teal"
-            height={400}
+            height={320}
           />
-          <div className="grid grid-cols-2 gap-3">
-            <KPICard
-              label="Bruto gewicht"
-              value={formatLargeNumber(kpisVanuit.brutoGewicht)}
-              color={DMI_COLORS.primary}
-              tooltip={KPI_TOOLTIPS.brutoGewicht}
-            />
-            <KPICard
-              label="Aantal zendingen"
-              value={formatLargeNumber(kpisVanuit.zendingAantal)}
-              color={DMI_COLORS.primary}
-              tooltip={KPI_TOOLTIPS.zendingAantal}
-            />
-          </div>
         </div>
       </div>
     </div>

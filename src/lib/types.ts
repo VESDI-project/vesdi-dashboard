@@ -30,6 +30,10 @@ export interface ZendingRow {
   LosLand?: string;
   PC4LaadNL?: string | null;
   PC4LosNL?: string | null;
+  geoKeyLaad?: string | null;   // Best available geo key: PC4 code or NUTS3 code
+  geoKeyLos?: string | null;
+  geoLevelLaad?: 'PC6' | 'PC4' | 'NUTS3' | null;
+  geoLevelLos?: 'PC6' | 'PC4' | 'NUTS3' | null;
   isNational?: boolean;
   isInternational?: boolean;
   isImport?: boolean;
@@ -77,6 +81,10 @@ export interface DeelritRow {
   LosLand?: string;
   PC4LaadNL?: string | null;
   PC4LosNL?: string | null;
+  geoKeyLaad?: string | null;
+  geoKeyLos?: string | null;
+  geoLevelLaad?: 'PC6' | 'PC4' | 'NUTS3' | null;
+  geoLevelLos?: 'PC6' | 'PC4' | 'NUTS3' | null;
   isNational?: boolean;
   isInternational?: boolean;
   isImport?: boolean;

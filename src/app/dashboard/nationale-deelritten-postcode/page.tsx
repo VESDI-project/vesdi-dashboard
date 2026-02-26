@@ -12,6 +12,8 @@ import {
   sumDeelritKPIs,
   deelrittenPerPC4Laad,
   deelrittenPerPC4Los,
+  deelrittenPerPC6Laad,
+  deelrittenPerPC6Los,
   deelrittenPerKlasse,
   voertuigcategorieDistribution,
   euro6Percentage,
@@ -33,8 +35,14 @@ export default function NationaleDeelrittenPostcodePage() {
   const deelritten = useNationalDeelritten();
 
   const kpis = useMemo(() => sumDeelritKPIs(deelritten), [deelritten]);
-  const laadPC4 = useMemo(() => deelrittenPerPC4Laad(deelritten), [deelritten]);
-  const losPC4 = useMemo(() => deelrittenPerPC4Los(deelritten), [deelritten]);
+  const laadPC4 = useMemo(
+    () => pcLevel === 'PC6' ? deelrittenPerPC6Laad(deelritten) : deelrittenPerPC4Laad(deelritten),
+    [deelritten, pcLevel]
+  );
+  const losPC4 = useMemo(
+    () => pcLevel === 'PC6' ? deelrittenPerPC6Los(deelritten) : deelrittenPerPC4Los(deelritten),
+    [deelritten, pcLevel]
+  );
   const perKlasse = useMemo(() => deelrittenPerKlasse(deelritten), [deelritten]);
   const voertuig = useMemo(() => voertuigcategorieDistribution(deelritten), [deelritten]);
   const euro6 = useMemo(() => euro6Percentage(deelritten), [deelritten]);
@@ -88,12 +96,14 @@ export default function NationaleDeelrittenPostcodePage() {
               data={laadPC4.slice(0, 50)}
               color={DMI_COLORS.primary}
               height={250}
+              level={pcLevel}
             />
             <PC4BubbleMap
               title={`Aantal deelritten per los ${pcLevel}`}
               data={losPC4.slice(0, 50)}
               color={DMI_COLORS.primary}
               height={250}
+              level={pcLevel}
             />
           </div>
         </Card>

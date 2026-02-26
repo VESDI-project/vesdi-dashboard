@@ -8,20 +8,32 @@ import { ExternalLink } from 'lucide-react';
 
 const LINKS = [
   {
-    title: 'VESDI achtergrond',
-    description: 'Informatie over het VESDI-project bij het CBS',
-    url: 'https://www.cbs.nl/nl-nl/onze-diensten/maatwerk-en-microdata/microdata-zelf-onderzoek-doen/microdatabestanden/vesdi-verkeersintensiteiten-stedelijke-distributie',
+    title: 'DMI Ecosysteem',
+    description: 'Dutch Metropolitan Innovations - platform voor duurzame stedelijke logistiek',
+    url: 'https://dmi-ecosysteem.nl',
+    icon: '🏙️',
+  },
+  {
+    title: 'CBS VESDI dossier',
+    description: 'Centraal Bureau voor de Statistiek - VESDI dataplatform en documentatie',
+    url: 'https://www.cbs.nl/nl-nl/dossier/vesdi',
     icon: '📊',
   },
   {
+    title: 'VESDI achtergrond',
+    description: 'Informatie over het VESDI-project en microdatabestanden',
+    url: 'https://www.cbs.nl/nl-nl/onze-diensten/maatwerk-en-microdata/microdata-zelf-onderzoek-doen/microdatabestanden/vesdi-verkeersintensiteiten-stedelijke-distributie',
+    icon: '📁',
+  },
+  {
     title: 'Post- en pakketmonitor',
-    description: 'Monitor voor post- en pakketstromen in Nederland',
+    description: 'ACM monitor voor post- en pakketstromen in Nederland',
     url: 'https://www.acm.nl/nl/onderwerpen/telecommunicatie/post/post-en-pakketmonitor',
     icon: '📦',
   },
   {
     title: 'VESDI maatwerkverzoeken',
-    description: 'Aanvullende VESDI-data op maat aanvragen',
+    description: 'Aanvullende VESDI-data op maat aanvragen bij het CBS',
     url: 'https://www.cbs.nl/nl-nl/onze-diensten/maatwerk-en-microdata/maatwerk',
     icon: '🎯',
   },

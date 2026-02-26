@@ -14,11 +14,25 @@ const RouteMap = dynamic(
   { ssr: false, loading: () => <div className="h-[500px] bg-white/5 rounded-lg animate-pulse" /> }
 );
 
+const ROUTE_OPTIONS = [
+  { value: 100, label: '100' },
+  { value: 200, label: '200' },
+  { value: 500, label: '500' },
+  { value: 1000, label: '1.000' },
+  { value: 0, label: 'Alles' },
+];
+
 export default function RoutekaartPage() {
   const [legendBuckets, setLegendBuckets] = useState(buildLegendBuckets(0));
+  const [maxRoutes, setMaxRoutes] = useState(200);
+  const [totalPairs, setTotalPairs] = useState(0);
 
   const handleLegendData = useCallback((maxCount: number) => {
     setLegendBuckets(buildLegendBuckets(maxCount));
+  }, []);
+
+  const handleTotalPairs = useCallback((total: number) => {
+    setTotalPairs(total);
   }, []);
 
   return (
@@ -30,8 +44,36 @@ export default function RoutekaartPage() {
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Legend */}
+        {/* Legend + controls */}
         <div className="space-y-4">
+          {/* Route limit selector */}
+          <Card className="p-4">
+            <h3 className="text-sm font-semibold text-dmi-text mb-2">
+              Aantal routes
+            </h3>
+            <p className="text-xs text-dmi-text/50 mb-3">
+              Top PC4-herkomst-bestemmingsparen
+              {totalPairs > 0 && (
+                <> ({totalPairs.toLocaleString('nl-NL')} unieke paren)</>
+              )}
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {ROUTE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setMaxRoutes(opt.value)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    maxRoutes === opt.value
+                      ? 'bg-dmi-orange text-white'
+                      : 'bg-dmi-bg text-dmi-text/70 hover:bg-dmi-orange/10'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </Card>
+
           <Card className="p-4">
             <h3 className="text-sm font-semibold text-dmi-text mb-3">
               Aantal deelritten
@@ -82,14 +124,22 @@ export default function RoutekaartPage() {
           <div className="flex items-start gap-2 p-3 bg-dmi-orange/10 rounded-lg">
             <AlertTriangle className="w-4 h-4 text-dmi-orange shrink-0 mt-0.5" />
             <p className="text-xs text-dmi-orange">
-              Let op! Het kan enige tijd duren voordat de kaart geladen is.
+              {maxRoutes === 0 || maxRoutes > 500
+                ? 'Let op! Bij een groot aantal routes kan het laden enkele minuten duren.'
+                : 'Let op! Het kan enige tijd duren voordat de kaart geladen is.'}
             </p>
           </div>
         </div>
 
         {/* Map */}
         <div className="lg:col-span-3">
-          <RouteMap height={600} onLegendData={handleLegendData} />
+          <RouteMap
+            key={maxRoutes}
+            height={600}
+            maxRoutes={maxRoutes}
+            onLegendData={handleLegendData}
+            onTotalPairs={handleTotalPairs}
+          />
         </div>
       </div>
     </div>

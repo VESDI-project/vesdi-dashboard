@@ -30,8 +30,14 @@ export default function VoorbladPage() {
           />
         </div>
 
-        <div className="relative z-10 p-8 flex justify-end">
-          <Badge className="bg-dmi-orange text-white text-2xl font-bold px-8 py-3 rounded-xl hover:bg-dmi-orange">
+        <div className="relative z-10 p-8 flex items-end justify-between">
+          {/* Wikipedia attribution for auto-fetched images */}
+          {heroImage && !heroImage.startsWith('data:') && (
+            <span className="text-white/50 text-xs">
+              Foto: Wikimedia Commons
+            </span>
+          )}
+          <Badge className="bg-dmi-orange text-white text-2xl font-bold px-8 py-3 rounded-xl hover:bg-dmi-orange ml-auto">
             {municipality?.name || 'Gemeente'}
           </Badge>
         </div>
