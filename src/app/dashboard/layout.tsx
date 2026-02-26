@@ -1,0 +1,56 @@
+'use client';
+
+import { DashboardSidebar } from '@/components/layout/dashboard-sidebar';
+import { useVesdiStore } from '@/lib/store';
+import Link from 'next/link';
+import { Upload, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const years = useVesdiStore((s) => s.years);
+  const hydrated = useVesdiStore((s) => s._hydrated);
+
+  // Show loading while IndexedDB data is being rehydrated
+  if (!hydrated) {
+    return (
+      <div className="min-h-screen bg-dmi-bg flex items-center justify-center p-6">
+        <div className="text-center space-y-4">
+          <Loader2 className="w-12 h-12 mx-auto text-dmi-primary/40 animate-spin" />
+          <p className="text-sm text-dmi-text/60">Dashboard laden...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (years.length === 0) {
+    return (
+      <div className="min-h-screen bg-dmi-bg flex items-center justify-center p-6">
+        <div className="text-center space-y-4">
+          <Upload className="w-12 h-12 mx-auto text-dmi-primary/40" />
+          <h2 className="text-xl font-semibold text-dmi-text">
+            Geen data geladen
+          </h2>
+          <p className="text-sm text-dmi-text/60">
+            Upload eerst CBS-bestanden om het dashboard te bekijken
+          </p>
+          <Link href="/">
+            <Button className="bg-dmi-orange hover:bg-dmi-orange/90 text-white">
+              Naar upload pagina
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-dmi-bg">
+      <DashboardSidebar />
+      <main className="ml-16 p-6">{children}</main>
+    </div>
+  );
+}
