@@ -41,7 +41,7 @@ export function trendEuro6Percentage(
     const national = rows.filter((r) => r.isNational);
     const totalTrips = national.reduce((s, r) => s + r.aantalDeelritten, 0);
     const euro6Trips = national
-      .filter((r) => r.euronormKlasse === '6')
+      .filter((r) => String(r.euronormKlasse) === '6')
       .reduce((s, r) => s + r.aantalDeelritten, 0);
     points.push({ year, value: totalTrips > 0 ? euro6Trips / totalTrips : 0 });
   }
@@ -171,14 +171,17 @@ export function sumDeelritKPIs(
 ): { aantalDeelritten: number; brutoGewicht: number; beladingsgraad: number } {
   const totalTrips = rows.reduce((s, r) => s + r.aantalDeelritten, 0);
   const totalWeight = rows.reduce((s, r) => s + r.brutoGewicht, 0);
-  const weightedBelading = rows.reduce(
+  // Exclude lege ritten from beladingsgraad (consistent with CBS/Power BI methodology)
+  const nonLeeg = rows.filter((r) => r.stadslogistieke_klasse !== '***Lege_rit***');
+  const nonLeegTrips = nonLeeg.reduce((s, r) => s + r.aantalDeelritten, 0);
+  const weightedBelading = nonLeeg.reduce(
     (s, r) => s + (r.beladingsgraadGewichtGemiddeld / 100) * r.aantalDeelritten,
     0
   );
   return {
     aantalDeelritten: totalTrips,
     brutoGewicht: totalWeight,
-    beladingsgraad: totalTrips > 0 ? weightedBelading / totalTrips : 0,
+    beladingsgraad: nonLeegTrips > 0 ? weightedBelading / nonLeegTrips : 0,
   };
 }
 
@@ -421,6 +424,12 @@ export function emissiezoneDistribution(
 
 // ─── Fuel type distribution (stacked bar) ───
 
+// Hardcoded fallback for brandstof codes (used when VESDI_lookup.xlsx not uploaded)
+const BRANDSTOF_FALLBACK = new Map<number, string>([
+  [1, 'Benzine, Diesel'],
+  [2, 'Overig'],
+]);
+
 export function brandstofDistribution(
   rows: DeelritRow[],
   lookup: { code: number | string; omschrijving: string }[]
@@ -430,7 +439,9 @@ export function brandstofDistribution(
   for (const e of lookup) lookupMap.set(Number(e.code), e.omschrijving);
 
   for (const r of rows) {
-    const name = lookupMap.get(r.brandstofsoortKlasse) || `Brandstof ${r.brandstofsoortKlasse}`;
+    const name = lookupMap.get(r.brandstofsoortKlasse)
+      || BRANDSTOF_FALLBACK.get(r.brandstofsoortKlasse)
+      || `Brandstof ${r.brandstofsoortKlasse}`;
     map.set(name, (map.get(name) || 0) + r.aantalDeelritten);
   }
   return [...map.entries()]
@@ -491,7 +502,7 @@ export function dataCompleteness(
 export function euro6Percentage(rows: DeelritRow[]): number {
   const total = rows.reduce((s, r) => s + r.aantalDeelritten, 0);
   const euro6 = rows
-    .filter((r) => r.euronormKlasse === '6')
+    .filter((r) => String(r.euronormKlasse) === '6')
     .reduce((s, r) => s + r.aantalDeelritten, 0);
   return total > 0 ? euro6 / total : 0;
 }

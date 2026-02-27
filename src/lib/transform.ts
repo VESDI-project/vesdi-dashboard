@@ -3,6 +3,29 @@ import type { ZendingRow, DeelritRow, LookupData, LookupEntry } from './types';
 type GeoLevel = 'PC6' | 'PC4' | 'NUTS3' | null;
 
 /**
+ * Safely parse a numeric value that may be a Dutch-formatted string
+ * (e.g., "2,6e+07" or "1.234,56"). Returns 0 for unparseable values.
+ */
+function safeNum(v: unknown): number {
+  if (typeof v === 'number') return isNaN(v) ? 0 : v;
+  if (typeof v === 'string') {
+    // Dutch scientific notation: "2,6e+07" → "2.6e+07"
+    const cleaned = v.replace(/,/g, '.');
+    const n = Number(cleaned);
+    return isNaN(n) ? 0 : n;
+  }
+  return 0;
+}
+
+// Hardcoded fallback maps for common CBS codetables (used when VESDI_lookup.xlsx is not uploaded)
+const VOERTUIG_FALLBACK = new Map<number, string>([
+  [1, 'Speciaal voertuig'],
+  [2, 'Vrachtwagen'],
+  [3, 'Trekker'],
+  [4, 'Speciaal voertuig'],
+]);
+
+/**
  * Resolve the best available geographic key and level for a location.
  * Fallback chain: PC6 → PC4 → NUTS3
  *
@@ -65,13 +88,20 @@ export function transformZendingen(
   return rows.map((row) => {
     const LaadLand = row.laadNuts3 ? row.laadNuts3.substring(0, 2) : '';
     const LosLand = row.losNuts3 ? row.losNuts3.substring(0, 2) : '';
+    const bothKnown = LaadLand !== '' && LosLand !== '';
     const isNational = LaadLand === 'NL' && LosLand === 'NL';
+    // International requires both lands to be known (non-empty) and at least one not NL
+    const isInternational = bothKnown && !isNational;
 
     const laadGeo = resolveGeo(row.laadPC6, row.laadPC4, row.laadNuts3, LaadLand);
     const losGeo = resolveGeo(row.losPC6, row.losPC4, row.losNuts3, LosLand);
 
     return {
       ...row,
+      // Ensure numeric fields are actual numbers (CBS sometimes uses Dutch scientific notation)
+      brutoGewicht: safeNum(row.brutoGewicht),
+      zendingAantal: safeNum(row.zendingAantal),
+      zendingAfstandGemiddeld: safeNum(row.zendingAfstandGemiddeld),
       LaadLand,
       LosLand,
       PC4LaadNL: laadGeo.pc4NL,
@@ -81,7 +111,7 @@ export function transformZendingen(
       geoLevelLaad: laadGeo.geoLevel,
       geoLevelLos: losGeo.geoLevel,
       isNational,
-      isInternational: !isNational,
+      isInternational,
       isImport: LaadLand !== 'NL' && LaadLand !== '',
       isExport: LosLand !== 'NL' && LosLand !== '',
       stadslogistieke_klasse:
@@ -107,13 +137,22 @@ export function transformDeelritten(
   return rows.map((row) => {
     const LaadLand = row.laadNuts3 ? row.laadNuts3.substring(0, 2) : '';
     const LosLand = row.losNuts3 ? row.losNuts3.substring(0, 2) : '';
+    const bothKnown = LaadLand !== '' && LosLand !== '';
     const isNational = LaadLand === 'NL' && LosLand === 'NL';
+    const isInternational = bothKnown && !isNational;
 
     const laadGeo = resolveGeo(row.laadPC6, row.laadPC4, row.laadNuts3, LaadLand);
     const losGeo = resolveGeo(row.losPC6, row.losPC4, row.losNuts3, LosLand);
 
     return {
       ...row,
+      // Ensure numeric fields are actual numbers (CBS sometimes uses Dutch scientific notation)
+      brutoGewicht: safeNum(row.brutoGewicht),
+      aantalDeelritten: safeNum(row.aantalDeelritten),
+      aantalLegeDeelritten: safeNum(row.aantalLegeDeelritten),
+      deelritAfstandGemiddeld: safeNum(row.deelritAfstandGemiddeld),
+      beladingsgraadGewichtGemiddeld: safeNum(row.beladingsgraadGewichtGemiddeld),
+      aantalZendingenRitGemiddeld: safeNum(row.aantalZendingenRitGemiddeld),
       LaadLand,
       LosLand,
       PC4LaadNL: laadGeo.pc4NL,
@@ -123,7 +162,7 @@ export function transformDeelritten(
       geoLevelLaad: laadGeo.geoLevel,
       geoLevelLos: losGeo.geoLevel,
       isNational,
-      isInternational: !isNational,
+      isInternational,
       isImport: LaadLand !== 'NL' && LaadLand !== '',
       isExport: LosLand !== 'NL' && LosLand !== '',
       stadslogistieke_klasse:
@@ -131,6 +170,7 @@ export function transformDeelritten(
         `Klasse ${row.stadslogistieke_klasse_code}`,
       voertuigsoort:
         voertuigMap.get(row.voertuigsoortRDW) ||
+        VOERTUIG_FALLBACK.get(row.voertuigsoortRDW) ||
         `Voertuigsoort ${row.voertuigsoortRDW}`,
       maxToegestaanGewicht_klasse:
         maxGewichtMap.get(String(row.maxToegestaanGewicht_klasse)) ||

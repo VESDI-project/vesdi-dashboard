@@ -67,13 +67,14 @@ export default function TrendsPage() {
     return [...keys];
   }, [voertuigTypes]);
 
-  // Build total row for beladingsgraad
+  // Build total row for beladingsgraad (excluding lege ritten, consistent with CBS methodology)
   const beladingsgraadTotal = useMemo(() => {
     const total: Record<string, string | number> = { klasse: 'Totaal' };
     for (const year of years) {
-      // Weighted average across all klasses for the year
       const rows = deelrittenByYear.get(year) || [];
-      const national = rows.filter((r) => r.isNational);
+      const national = rows.filter(
+        (r) => r.isNational && r.stadslogistieke_klasse !== '***Lege_rit***'
+      );
       const totalTrips = national.reduce((s, r) => s + r.aantalDeelritten, 0);
       const weightedSum = national.reduce(
         (s, r) => s + (r.beladingsgraadGewichtGemiddeld / 100) * r.aantalDeelritten,

@@ -61,7 +61,7 @@ function applyZendingenFilters(
   let filtered = rows;
 
   if (filters.euronorm) {
-    filtered = filtered.filter((r) => r.euronormKlasse === filters.euronorm);
+    filtered = filtered.filter((r) => String(r.euronormKlasse) === filters.euronorm);
   }
   if (filters.laadEmissiezone) {
     filtered = filtered.filter(
@@ -89,7 +89,7 @@ function applyDeelrittenFilters(
   let filtered = rows;
 
   if (filters.euronorm) {
-    filtered = filtered.filter((r) => r.euronormKlasse === filters.euronorm);
+    filtered = filtered.filter((r) => String(r.euronormKlasse) === filters.euronorm);
   }
   if (filters.laadEmissiezone) {
     filtered = filtered.filter(

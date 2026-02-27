@@ -14,7 +14,7 @@ import type {
 } from './types';
 import { syncToServer } from './sync-client';
 import { parseCSV, readFileAsText, readFileAsArrayBuffer } from './parse-csv';
-import { parseLookupXlsx, parseNutsSchema } from './parse-xlsx';
+import { parseLookupXlsx, parseCodetabellenXlsx, parseNutsSchema } from './parse-xlsx';
 import { detectFileType } from './validate';
 import { transformZendingen, transformDeelritten } from './transform';
 import { idbStorage } from './idb-storage';
@@ -172,12 +172,42 @@ export const useVesdiStore = create<VesdiStore>()(
           set({ nutsMapping });
         }
 
+        // Parse CBS codetabellen XLSX (contains voertuig, brandstof, gewicht, etc.)
+        const codetabellenFiles = detected.filter((d) => d.type === 'CODETABELLEN_GEMEENTE');
+        for (const ctFile of codetabellenFiles) {
+          set({ processingStatus: 'CBS codetabellen verwerken...' });
+          const buffer = await readFileAsArrayBuffer(ctFile.file);
+          const partial = parseCodetabellenXlsx(buffer);
+
+          // Ensure a lookup object exists
+          if (!lookup) {
+            lookup = {
+              voertuigsoortRDW: [],
+              brandstofsoort: [],
+              laadvermogenCombinatie: [],
+              maxToegestaanGewicht: [],
+              leeggewichtCombinatie: [],
+              logistiekeKlasse: [],
+              legeRit: [],
+              nuts3: [],
+              gemeentecode: [],
+            };
+          }
+
+          // Merge extracted tables: CBS codetabellen entries replace empty arrays
+          for (const [key, entries] of Object.entries(partial) as [keyof LookupData, LookupEntry[]][]) {
+            if (entries && entries.length > 0) {
+              lookup = { ...lookup, [key]: entries };
+            }
+          }
+        }
+
         // Parse CSV codetables and merge into lookup
         const gemeenteFile = detected.find((d) => d.type === 'CODETABEL_GEMEENTE');
         const klasseFile = detected.find((d) => d.type === 'CODETABEL_KLASSE');
 
         if (gemeenteFile || klasseFile) {
-          // Ensure a lookup object exists (create empty shell if no XLSX was loaded)
+          // Ensure a lookup object exists
           if (!lookup) {
             lookup = {
               voertuigsoortRDW: [],
@@ -200,7 +230,6 @@ export const useVesdiStore = create<VesdiStore>()(
               code: String(row.gemCode).padStart(4, '0'),
               omschrijving: String(row.gemNaam),
             }));
-            // Merge: CSV entries replace/extend existing gemeentecode list
             lookup = { ...lookup, gemeentecode: entries };
           }
 
@@ -212,12 +241,11 @@ export const useVesdiStore = create<VesdiStore>()(
               code: Number(row.stadslogistieke_klasse_code),
               omschrijving: String(row.stadslogistieke_klasse),
             }));
-            // Merge: CSV entries replace/extend existing logistiekeKlasse list
             lookup = { ...lookup, logistiekeKlasse: entries };
           }
-
-          set({ lookup });
         }
+
+        if (lookup) set({ lookup });
 
         // Phase 3: Parse data CSVs
         const zendingenByYear = new Map(get().zendingenByYear);
