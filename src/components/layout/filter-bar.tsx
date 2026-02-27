@@ -52,7 +52,7 @@ export function FilterBar({
         value={filters.year ? String(filters.year) : ''}
         onValueChange={(v) => setFilter('year', Number(v))}
       >
-        <SelectTrigger className="w-[120px] bg-[#004D6E] border-[#004D6E] text-white">
+        <SelectTrigger className="w-[120px] bg-[#1d3b64] border-[#1d3b64] text-white">
           <SelectValue placeholder="Jaar" />
         </SelectTrigger>
         <SelectContent>
@@ -70,7 +70,7 @@ export function FilterBar({
           value={filters.euronorm || 'all'}
           onValueChange={(v) => setFilter('euronorm', v === 'all' ? null : v)}
         >
-          <SelectTrigger className="w-[140px] bg-[#004D6E] border-[#004D6E] text-white">
+          <SelectTrigger className="w-[140px] bg-[#1d3b64] border-[#1d3b64] text-white">
             <SelectValue placeholder="Euronorm" />
           </SelectTrigger>
           <SelectContent>
@@ -88,7 +88,7 @@ export function FilterBar({
             value={filters.laadEmissiezone || 'all'}
             onValueChange={(v) => setFilter('laadEmissiezone', v === 'all' ? null : v)}
           >
-            <SelectTrigger className="w-[180px] bg-[#004D6E] border-[#004D6E] text-white">
+            <SelectTrigger className="w-[180px] bg-[#1d3b64] border-[#1d3b64] text-white">
               <SelectValue placeholder="Laden emissiezone" />
             </SelectTrigger>
             <SelectContent>
@@ -101,7 +101,7 @@ export function FilterBar({
             value={filters.losEmissiezone || 'all'}
             onValueChange={(v) => setFilter('losEmissiezone', v === 'all' ? null : v)}
           >
-            <SelectTrigger className="w-[180px] bg-[#004D6E] border-[#004D6E] text-white">
+            <SelectTrigger className="w-[180px] bg-[#1d3b64] border-[#1d3b64] text-white">
               <SelectValue placeholder="Lossen emissiezone" />
             </SelectTrigger>
             <SelectContent>
@@ -119,7 +119,7 @@ export function FilterBar({
           value={filters.handelsrichting || 'all'}
           onValueChange={(v) => setFilter('handelsrichting', v === 'all' ? null : v)}
         >
-          <SelectTrigger className="w-[160px] bg-[#004D6E] border-[#004D6E] text-white">
+          <SelectTrigger className="w-[160px] bg-[#1d3b64] border-[#1d3b64] text-white">
             <SelectValue placeholder="Handelsrichting" />
           </SelectTrigger>
           <SelectContent>

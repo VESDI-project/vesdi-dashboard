@@ -12,17 +12,18 @@
   --font-condensed: var(--font-ibm-plex-sans-condensed);
 
   /* DMI Colors */
-  --color-dmi-primary: #004D6E;
+  --color-dmi-primary: #1d3b64;
+  --color-dmi-navy: #003366;
   --color-dmi-orange: #F58030;
   --color-dmi-green: #A7BB54;
-  --color-dmi-gold: #E1AE36;
+  --color-dmi-gold: #f6b800;
   --color-dmi-red: #F15D59;
   --color-dmi-teal: #81CCB5;
   --color-dmi-purple: #6E5990;
   --color-dmi-mauve: #AE576F;
   --color-dmi-bg: #F9F7F2;
   --color-dmi-text: #252423;
-  --color-dmi-table-accent: #426871;
+  --color-dmi-table-accent: #2a4d6e;
 
   /* shadcn mapped colors */
   --color-sidebar-ring: var(--sidebar-ring);
@@ -71,7 +72,7 @@
   --card-foreground: #252423;
   --popover: #ffffff;
   --popover-foreground: #252423;
-  --primary: #004D6E;
+  --primary: #1d3b64;
   --primary-foreground: #ffffff;
   --secondary: #f0ede6;
   --secondary-foreground: #252423;
@@ -82,20 +83,20 @@
   --destructive: #F15D59;
   --border: #e0ddd6;
   --input: #e0ddd6;
-  --ring: #004D6E;
-  --chart-1: #004D6E;
+  --ring: #1d3b64;
+  --chart-1: #1d3b64;
   --chart-2: #F58030;
   --chart-3: #A7BB54;
-  --chart-4: #E1AE36;
+  --chart-4: #f6b800;
   --chart-5: #81CCB5;
-  --sidebar: #004D6E;
+  --sidebar: #1d3b64;
   --sidebar-foreground: #ffffff;
-  --sidebar-primary: #F58030;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #005d85;
+  --sidebar-primary: #f6b800;
+  --sidebar-primary-foreground: #1d3b64;
+  --sidebar-accent: #2a4d6e;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #005d85;
-  --sidebar-ring: #81CCB5;
+  --sidebar-border: #2a4d6e;
+  --sidebar-ring: #f6b800;
 }
 
 @layer base {

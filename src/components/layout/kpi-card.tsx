@@ -13,7 +13,7 @@ interface KPICardProps {
   tooltip?: string;
 }
 
-export function KPICard({ label, value, color = '#004D6E', tooltip }: KPICardProps) {
+export function KPICard({ label, value, color = '#1d3b64', tooltip }: KPICardProps) {
   return (
     <Card className="p-4 bg-white">
       <div className="flex items-center gap-1 mb-1">

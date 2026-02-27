@@ -1,17 +1,18 @@
 // DMI Design System color palette
 
 export const DMI_COLORS = {
-  primary: '#004D6E',
+  primary: '#1d3b64',
+  navy: '#003366',
   orange: '#F58030',
   green: '#A7BB54',
-  gold: '#E1AE36',
+  gold: '#f6b800',
   red: '#F15D59',
   teal: '#81CCB5',
   purple: '#6E5990',
   mauve: '#AE576F',
   bg: '#F9F7F2',
   text: '#252423',
-  tableAccent: '#426871',
+  tableAccent: '#2a4d6e',
 } as const;
 
 // Color schemes per dashboard section
@@ -36,13 +37,13 @@ export const PAGE_COLORS = {
     bg: DMI_COLORS.primary,
     accent: DMI_COLORS.teal,
     text: '#ffffff',
-    chartColors: [DMI_COLORS.primary, DMI_COLORS.teal, '#005d85', '#003d52'],
+    chartColors: [DMI_COLORS.primary, DMI_COLORS.teal, '#2a4d6e', '#003366'],
   },
   nationaleZendingen: {
     bg: DMI_COLORS.primary,
     accent: DMI_COLORS.teal,
     text: '#ffffff',
-    chartColors: [DMI_COLORS.primary, DMI_COLORS.teal, '#005d85'],
+    chartColors: [DMI_COLORS.primary, DMI_COLORS.teal, '#2a4d6e'],
   },
   internationaleZendingen: {
     bg: '#5C6B2F',
@@ -54,7 +55,7 @@ export const PAGE_COLORS = {
     bg: DMI_COLORS.primary,
     accent: DMI_COLORS.teal,
     text: '#ffffff',
-    chartColors: [DMI_COLORS.primary, DMI_COLORS.teal, '#005d85', '#003d52'],
+    chartColors: [DMI_COLORS.primary, DMI_COLORS.teal, '#2a4d6e', '#003366'],
   },
   internationaleDeelritten: {
     bg: DMI_COLORS.mauve,
@@ -122,7 +123,7 @@ export const ROUTE_HEAT_COLORS = [
 export const YEAR_COLORS: Record<number, string> = {
   2021: '#81CCB5',
   2022: '#F58030',
-  2023: '#004D6E',
+  2023: '#1d3b64',
   2024: '#AE576F',
   2025: '#A7BB54',
 };

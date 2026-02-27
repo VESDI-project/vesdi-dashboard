@@ -25,7 +25,7 @@ interface HorizontalBarChartProps {
 export function HorizontalBarChart({
   title,
   data,
-  color = '#004D6E',
+  color = '#1d3b64',
   xLabel,
   maxItems = 15,
   titleTooltip,

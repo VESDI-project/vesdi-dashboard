@@ -27,7 +27,7 @@ interface PC4BubbleMapProps {
 export function PC4BubbleMap({
   title,
   data,
-  color = '#004D6E',
+  color = '#1d3b64',
   height = 300,
   level = 'PC4',
 }: PC4BubbleMapProps) {

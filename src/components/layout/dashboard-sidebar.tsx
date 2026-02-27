@@ -113,10 +113,10 @@ export function DashboardSidebar() {
                   ? 'items-start gap-2.5 px-2.5 py-2'
                   : 'items-center w-10 h-10 justify-center',
                 isActive
-                  ? 'bg-white/20 text-white'
+                  ? 'text-white'
                   : 'text-white/60 hover:text-white hover:bg-white/10'
               )}
-              style={isActive ? { backgroundColor: item.color + '40' } : undefined}
+              style={isActive ? { backgroundColor: DMI_COLORS.gold + '30', borderLeft: `3px solid ${DMI_COLORS.gold}` } : undefined}
             >
               <Icon className={cn('w-5 h-5 shrink-0', expanded && 'mt-0.5')} />
               {expanded && (
