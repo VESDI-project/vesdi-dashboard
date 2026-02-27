@@ -21,8 +21,8 @@
   --color-dmi-teal: #81CCB5;
   --color-dmi-purple: #6E5990;
   --color-dmi-mauve: #AE576F;
-  --color-dmi-bg: #F9F7F2;
-  --color-dmi-text: #252423;
+  --color-dmi-bg: #f5f5f5;
+  --color-dmi-text: #333333;
   --color-dmi-table-accent: #2a4d6e;
 
   /* shadcn mapped colors */
@@ -66,23 +66,23 @@
 
 :root {
   --radius: 0.625rem;
-  --background: #F9F7F2;
-  --foreground: #252423;
+  --background: #f5f5f5;
+  --foreground: #333333;
   --card: #ffffff;
-  --card-foreground: #252423;
+  --card-foreground: #333333;
   --popover: #ffffff;
-  --popover-foreground: #252423;
+  --popover-foreground: #333333;
   --primary: #1d3b64;
   --primary-foreground: #ffffff;
-  --secondary: #f0ede6;
-  --secondary-foreground: #252423;
-  --muted: #f0ede6;
-  --muted-foreground: #6b6966;
-  --accent: #f0ede6;
-  --accent-foreground: #252423;
+  --secondary: #ebebeb;
+  --secondary-foreground: #333333;
+  --muted: #ebebeb;
+  --muted-foreground: #6b6b6b;
+  --accent: #ebebeb;
+  --accent-foreground: #333333;
   --destructive: #F15D59;
-  --border: #e0ddd6;
-  --input: #e0ddd6;
+  --border: #e0e0e0;
+  --input: #e0e0e0;
   --ring: #1d3b64;
   --chart-1: #1d3b64;
   --chart-2: #F58030;

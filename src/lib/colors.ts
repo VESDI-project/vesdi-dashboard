@@ -10,8 +10,8 @@ export const DMI_COLORS = {
   teal: '#81CCB5',
   purple: '#6E5990',
   mauve: '#AE576F',
-  bg: '#F9F7F2',
-  text: '#252423',
+  bg: '#f5f5f5',
+  text: '#333333',
   tableAccent: '#2a4d6e',
 } as const;
 
