@@ -165,18 +165,19 @@ async function loadCentroids(): Promise<Record<string, Centroid>> {
 interface RouteMapProps {
   height?: number;
   maxRoutes?: number;
+  useTrajectories?: boolean;
   onLegendData?: (maxCount: number) => void;
   onTotalPairs?: (total: number) => void;
 }
 
-export function RouteMap({ height = 500, maxRoutes = 200, onLegendData, onTotalPairs }: RouteMapProps) {
+export function RouteMap({ height = 500, maxRoutes = 200, useTrajectories = false, onLegendData, onTotalPairs }: RouteMapProps) {
   const deelrittenByYear = useVesdiStore((s) => s.deelrittenByYear);
   const [segments, setSegments] = useState<RouteSegment[]>([]);
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
 
   // Aggregate unique geo key pairs across all years with Euro + klasse breakdown
-  const geoKeyPairs = useMemo((): GeoKeyPairAgg[] => {
+  const allPairsSorted = useMemo((): GeoKeyPairAgg[] => {
     const map = new Map<string, GeoKeyPairAgg>();
     for (const rows of deelrittenByYear.values()) {
       for (const r of rows) {
@@ -200,10 +201,17 @@ export function RouteMap({ height = 500, maxRoutes = 200, onLegendData, onTotalP
         agg.klasseMap.set(klasse, (agg.klasseMap.get(klasse) || 0) + r.aantalDeelritten);
       }
     }
-    const sorted = [...map.values()].sort((a, b) => b.count - a.count);
-    onTotalPairs?.(sorted.length);
-    return maxRoutes > 0 ? sorted.slice(0, maxRoutes) : sorted;
-  }, [deelrittenByYear, maxRoutes, onTotalPairs]);
+    return [...map.values()].sort((a, b) => b.count - a.count);
+  }, [deelrittenByYear]);
+
+  const geoKeyPairs = useMemo(
+    () => maxRoutes > 0 ? allPairsSorted.slice(0, maxRoutes) : allPairsSorted,
+    [allPairsSorted, maxRoutes]
+  );
+
+  useEffect(() => {
+    onTotalPairs?.(allPairsSorted.length);
+  }, [allPairsSorted.length, onTotalPairs]);
 
   const fetchRoutes = useCallback(async () => {
     if (geoKeyPairs.length === 0) {
@@ -244,51 +252,57 @@ export function RouteMap({ height = 500, maxRoutes = 200, onLegendData, onTotalP
     setProgress({ done: 0, total: resolvedPairs.length });
     let done = 0;
 
-    // Process in parallel batches of 10
-    const BATCH_SIZE = 10;
-    for (let batchStart = 0; batchStart < resolvedPairs.length; batchStart += BATCH_SIZE) {
-      const batch = resolvedPairs.slice(batchStart, batchStart + BATCH_SIZE);
+    const buildSegment = (pair: GeoKeyPairAgg, coords: [number, number][]) => {
+      const topKlassen = [...pair.klasseMap.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([klasse, count]) => ({
+          klasse,
+          count,
+          pct: pair.count > 0 ? Math.round((count / pair.count) * 100) : 0,
+        }));
+      return {
+        coordinates: coords,
+        count: pair.count,
+        color: getHeatColor(pair.count, maxCount),
+        euro6Count: pair.euro6Count,
+        euro05Count: pair.euro05Count,
+        topKlassen,
+      };
+    };
 
-      const batchResults = await Promise.all(
-        batch.map(async ({ pair, from, to }) => {
-          let coords = await fetchRoute(from.lat, from.lng, to.lat, to.lng);
+    if (!useTrajectories) {
+      // Straight lines — no ORS calls, instant rendering
+      for (const { pair, from, to } of resolvedPairs) {
+        results.push(buildSegment(pair, [[from.lat, from.lng], [to.lat, to.lng]]));
+      }
+      setProgress({ done: resolvedPairs.length, total: resolvedPairs.length });
+    } else {
+      // Fetch actual trajectories from ORS in parallel batches
+      const BATCH_SIZE = 10;
+      for (let batchStart = 0; batchStart < resolvedPairs.length; batchStart += BATCH_SIZE) {
+        const batch = resolvedPairs.slice(batchStart, batchStart + BATCH_SIZE);
 
-          if (!coords || coords.length === 0) {
-            coords = [
-              [from.lat, from.lng],
-              [to.lat, to.lng],
-            ];
-          }
+        const batchResults = await Promise.all(
+          batch.map(async ({ pair, from, to }) => {
+            let coords = await fetchRoute(from.lat, from.lng, to.lat, to.lng);
+            if (!coords || coords.length === 0) {
+              coords = [[from.lat, from.lng], [to.lat, to.lng]];
+            }
+            return buildSegment(pair, coords);
+          })
+        );
 
-          const topKlassen = [...pair.klasseMap.entries()]
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 3)
-            .map(([klasse, count]) => ({
-              klasse,
-              count,
-              pct: pair.count > 0 ? Math.round((count / pair.count) * 100) : 0,
-            }));
-
-          return {
-            coordinates: coords,
-            count: pair.count,
-            color: getHeatColor(pair.count, maxCount),
-            euro6Count: pair.euro6Count,
-            euro05Count: pair.euro05Count,
-            topKlassen,
-          };
-        })
-      );
-
-      results.push(...batchResults);
-      done += batch.length;
-      setProgress({ done, total: resolvedPairs.length });
+        results.push(...batchResults);
+        done += batch.length;
+        setProgress({ done, total: resolvedPairs.length });
+      }
     }
 
     results.sort((a, b) => a.count - b.count);
     setSegments(results);
     setLoading(false);
-  }, [geoKeyPairs, onLegendData]);
+  }, [geoKeyPairs, useTrajectories, onLegendData]);
 
   useEffect(() => {
     fetchRoutes();

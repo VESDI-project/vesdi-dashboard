@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { PAGE_COLORS } from '@/lib/colors';
 import { PAGE_DESCRIPTIONS } from '@/lib/descriptions';
 import { Card } from '@/components/ui/card';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Route, Minus } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { buildLegendBuckets } from '@/components/maps/route-map';
 
@@ -25,6 +25,7 @@ const ROUTE_OPTIONS = [
 export default function RoutekaartPage() {
   const [legendBuckets, setLegendBuckets] = useState(buildLegendBuckets(0));
   const [maxRoutes, setMaxRoutes] = useState(200);
+  const [useTrajectories, setUseTrajectories] = useState(false);
   const [totalPairs, setTotalPairs] = useState(0);
 
   const handleLegendData = useCallback((maxCount: number) => {
@@ -71,6 +72,40 @@ export default function RoutekaartPage() {
                   {opt.label}
                 </button>
               ))}
+            </div>
+          </Card>
+
+          {/* Route mode toggle */}
+          <Card className="p-4">
+            <h3 className="text-sm font-semibold text-dmi-text mb-2">
+              Weergave
+            </h3>
+            <p className="text-xs text-dmi-text/50 mb-3">
+              Rechte lijnen laden direct. Trajecten vragen routes op bij de routeserver.
+            </p>
+            <div className="flex gap-1.5">
+              <button
+                onClick={() => setUseTrajectories(false)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  !useTrajectories
+                    ? 'bg-dmi-orange text-white'
+                    : 'bg-dmi-bg text-dmi-text/70 hover:bg-dmi-orange/10'
+                }`}
+              >
+                <Minus className="w-3.5 h-3.5" />
+                Rechte lijnen
+              </button>
+              <button
+                onClick={() => setUseTrajectories(true)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  useTrajectories
+                    ? 'bg-dmi-orange text-white'
+                    : 'bg-dmi-bg text-dmi-text/70 hover:bg-dmi-orange/10'
+                }`}
+              >
+                <Route className="w-3.5 h-3.5" />
+                Trajecten
+              </button>
             </div>
           </Card>
 
@@ -134,9 +169,10 @@ export default function RoutekaartPage() {
         {/* Map */}
         <div className="lg:col-span-3">
           <RouteMap
-            key={maxRoutes}
+            key={`${maxRoutes}-${useTrajectories}`}
             height={600}
             maxRoutes={maxRoutes}
+            useTrajectories={useTrajectories}
             onLegendData={handleLegendData}
             onTotalPairs={handleTotalPairs}
           />
