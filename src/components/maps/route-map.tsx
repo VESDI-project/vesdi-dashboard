@@ -73,64 +73,63 @@ function setRouteCache(cache: Record<string, [number, number][]>) {
   }
 }
 
-const MAX_RETRIES = 3;
-const RETRY_DELAY_MS = 300;
+function makeCacheKey(fromLat: number, fromLng: number, toLat: number, toLng: number) {
+  return `${fromLat.toFixed(4)},${fromLng.toFixed(4)}-${toLat.toFixed(4)},${toLng.toFixed(4)}`;
+}
 
-async function fetchRoute(
-  fromLat: number,
-  fromLng: number,
-  toLat: number,
-  toLng: number
-): Promise<[number, number][] | null> {
-  const cacheKey = `${fromLat.toFixed(4)},${fromLng.toFixed(4)}-${toLat.toFixed(4)},${toLng.toFixed(4)}`;
+/** Fetch a batch of routes in a single HTTP request, resolved server-side in parallel */
+async function fetchRoutesBatch(
+  pairs: { fromLat: number; fromLng: number; toLat: number; toLng: number }[]
+): Promise<([number, number][] | null)[]> {
   const cache = getRouteCache();
-  if (cache[cacheKey]) return cache[cacheKey];
-
-  const body = JSON.stringify({
-    coordinates: [
-      [fromLng, fromLat],
-      [toLng, toLat],
-    ],
+  const uncachedIndices: number[] = [];
+  const results: ([number, number][] | null)[] = pairs.map((p, i) => {
+    const key = makeCacheKey(p.fromLat, p.fromLng, p.toLat, p.toLng);
+    if (cache[key]) return cache[key];
+    uncachedIndices.push(i);
+    return null;
   });
 
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    try {
-      const res = await fetch(`/api/ors?profile=${ORS_PROFILE}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body,
-      });
+  if (uncachedIndices.length === 0) return results;
 
-      if (!res.ok) {
-        if (attempt < MAX_RETRIES - 1) {
-          await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * (attempt + 1)));
-          continue;
-        }
-        return null;
-      }
+  try {
+    const batch = uncachedIndices.map((i) => ({
+      coordinates: [
+        [pairs[i].fromLng, pairs[i].fromLat],
+        [pairs[i].toLng, pairs[i].toLat],
+      ],
+    }));
 
-      const data = await res.json();
-      const coords: [number, number][] =
-        data.features?.[0]?.geometry?.coordinates?.map(
+    const res = await fetch(`/api/ors?profile=${ORS_PROFILE}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ batch }),
+    });
+
+    if (!res.ok) return results;
+
+    const data = await res.json();
+    const batchResults: ({ coordinates: [number, number][] } | null)[] = data.results;
+
+    for (let j = 0; j < uncachedIndices.length; j++) {
+      const idx = uncachedIndices[j];
+      const route = batchResults[j];
+      if (route?.coordinates?.length) {
+        const coords: [number, number][] = route.coordinates.map(
           (c: [number, number]) => [c[1], c[0]] as [number, number]
-        ) || [];
-
-      if (coords.length > 0) {
-        cache[cacheKey] = coords;
-        setRouteCache(cache);
+        );
+        results[idx] = coords;
+        const p = pairs[idx];
+        cache[makeCacheKey(p.fromLat, p.fromLng, p.toLat, p.toLng)] = coords;
       }
-
-      return coords;
-    } catch {
-      if (attempt < MAX_RETRIES - 1) {
-        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * (attempt + 1)));
-        continue;
-      }
-      return null;
     }
+
+    setRouteCache(cache);
+  } catch {
+    // Network error — results stay null, will fall back to straight lines
   }
 
-  return null;
+  return results;
 }
 
 /** Load PC6, PC4 and NUTS3 centroid files and return a unified resolver */
@@ -297,22 +296,26 @@ export function RouteMap({ height = 500, maxRoutes = 200, useTrajectories = fals
       }
       setProgress({ done: resolvedPairs.length, total: resolvedPairs.length });
     } else {
-      // Fetch actual trajectories from ORS in parallel batches
-      const BATCH_SIZE = 10;
+      // Send routes in batches, resolved server-side with high concurrency
+      const BATCH_SIZE = 100;
       for (let batchStart = 0; batchStart < resolvedPairs.length; batchStart += BATCH_SIZE) {
         const batch = resolvedPairs.slice(batchStart, batchStart + BATCH_SIZE);
+        const pairs = batch.map(({ from, to }) => ({
+          fromLat: from.lat, fromLng: from.lng,
+          toLat: to.lat, toLng: to.lng,
+        }));
 
-        const batchResults = await Promise.all(
-          batch.map(async ({ pair, from, to }) => {
-            let coords = await fetchRoute(from.lat, from.lng, to.lat, to.lng);
-            if (!coords || coords.length === 0) {
-              coords = [[from.lat, from.lng], [to.lat, to.lng]];
-            }
-            return buildSegment(pair, coords);
-          })
-        );
+        const batchCoords = await fetchRoutesBatch(pairs);
 
-        results.push(...batchResults);
+        for (let j = 0; j < batch.length; j++) {
+          let coords = batchCoords[j];
+          if (!coords || coords.length === 0) {
+            const { from, to } = batch[j];
+            coords = [[from.lat, from.lng], [to.lat, to.lng]];
+          }
+          results.push(buildSegment(batch[j].pair, coords));
+        }
+
         done += batch.length;
         setProgress({ done, total: resolvedPairs.length });
       }
