@@ -73,6 +73,9 @@ function setRouteCache(cache: Record<string, [number, number][]>) {
   }
 }
 
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 300;
+
 async function fetchRoute(
   fromLat: number,
   fromLng: number,
@@ -83,35 +86,51 @@ async function fetchRoute(
   const cache = getRouteCache();
   if (cache[cacheKey]) return cache[cacheKey];
 
-  try {
-    const res = await fetch(`/api/ors?profile=${ORS_PROFILE}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        coordinates: [
-          [fromLng, fromLat],
-          [toLng, toLat],
-        ],
-      }),
-    });
+  const body = JSON.stringify({
+    coordinates: [
+      [fromLng, fromLat],
+      [toLng, toLat],
+    ],
+  });
 
-    if (!res.ok) return null;
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      const res = await fetch(`/api/ors?profile=${ORS_PROFILE}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+      });
 
-    const data = await res.json();
-    const coords: [number, number][] =
-      data.features?.[0]?.geometry?.coordinates?.map(
-        (c: [number, number]) => [c[1], c[0]] as [number, number]
-      ) || [];
+      if (!res.ok) {
+        if (attempt < MAX_RETRIES - 1) {
+          await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * (attempt + 1)));
+          continue;
+        }
+        return null;
+      }
 
-    if (coords.length > 0) {
-      cache[cacheKey] = coords;
-      setRouteCache(cache);
+      const data = await res.json();
+      const coords: [number, number][] =
+        data.features?.[0]?.geometry?.coordinates?.map(
+          (c: [number, number]) => [c[1], c[0]] as [number, number]
+        ) || [];
+
+      if (coords.length > 0) {
+        cache[cacheKey] = coords;
+        setRouteCache(cache);
+      }
+
+      return coords;
+    } catch {
+      if (attempt < MAX_RETRIES - 1) {
+        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * (attempt + 1)));
+        continue;
+      }
+      return null;
     }
-
-    return coords;
-  } catch {
-    return null;
   }
+
+  return null;
 }
 
 /** Load PC6, PC4 and NUTS3 centroid files and return a unified resolver */
