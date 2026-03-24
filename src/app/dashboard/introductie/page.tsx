@@ -3,8 +3,9 @@
 import { useVesdiStore } from '@/lib/store';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card } from '@/components/ui/card';
-import { PAGE_COLORS } from '@/lib/colors';
+import { PAGE_COLORS, DMI_COLORS } from '@/lib/colors';
 import { PAGE_DESCRIPTIONS } from '@/lib/descriptions';
+import { useHasAnprData } from '@/lib/anpr-selectors';
 import Link from 'next/link';
 import {
   TrendingUp,
@@ -18,26 +19,70 @@ import {
   Link2,
   BookOpen,
   CheckCircle,
+  Code2,
+  Camera,
+  Zap,
+  Building2,
+  Users,
+  Clock,
+  FlaskConical,
 } from 'lucide-react';
 
-const NAV_BUTTONS = [
-  { href: '/dashboard/trends', label: 'Overzicht en tendensen', icon: TrendingUp, color: '#A7BB54' },
-  { href: '/dashboard/zendingen-overzicht', label: 'Zendingen overzicht', icon: Map, color: '#A7BB54' },
-  { href: '/dashboard/nationale-zendingen', label: 'Nationale zendingen', icon: Package, color: '#A7BB54' },
-  { href: '/dashboard/internationale-zendingen', label: 'Internationale zendingen', icon: Globe, color: '#8BA043' },
-  { href: '/dashboard/nationale-deelritten', label: 'Nationale deelritten', icon: Truck, color: '#A7BB54' },
-  { href: '/dashboard/nationale-deelritten-postcode', label: 'Nationale deelritten (postcode)', icon: MapPin, color: '#A7BB54' },
-  { href: '/dashboard/routekaart', label: 'Nationale deelritten (routekaart)', icon: Route, color: '#A7BB54' },
-  { href: '/dashboard/internationale-deelritten-overzicht', label: 'Internationale deelritten - overzicht', icon: Globe, color: '#8BA043' },
-  { href: '/dashboard/internationale-deelritten', label: 'Internationale deelritten', icon: BarChart3, color: '#8BA043' },
-  { href: '/dashboard/externe-links', label: 'Links', icon: Link2, color: '#8BA043' },
-  { href: '/dashboard/definities', label: 'Definities', icon: BookOpen, color: '#5C6B2F' },
-  { href: '/dashboard/data-volledigheid', label: 'Data volledigheid', icon: CheckCircle, color: '#5C6B2F' },
+const WVE_BUTTONS = [
+  { href: '/dashboard/trends', label: 'Trends', icon: TrendingUp },
+  { href: '/dashboard/zendingen-overzicht', label: 'Zendingen overzicht', icon: Map },
+  { href: '/dashboard/nationale-zendingen', label: 'Nationale zendingen', icon: Package },
+  { href: '/dashboard/internationale-zendingen', label: 'Internationale zendingen', icon: Globe },
+  { href: '/dashboard/nationale-deelritten', label: 'Nationale deelritten', icon: Truck },
+  { href: '/dashboard/nationale-deelritten-postcode', label: 'Deelritten postcode', icon: MapPin },
+  { href: '/dashboard/routekaart', label: 'Routekaart', icon: Route },
+  { href: '/dashboard/internationale-deelritten-overzicht', label: 'Int. deelritten overzicht', icon: Globe },
+  { href: '/dashboard/internationale-deelritten', label: 'Int. deelritten', icon: BarChart3 },
 ];
+
+const ANPR_BUTTONS = [
+  { href: '/dashboard/anpr-overzicht', label: 'Overzicht', icon: Camera },
+  { href: '/dashboard/anpr-emissie', label: 'Emissieklasse', icon: Zap },
+  { href: '/dashboard/anpr-bedrijven', label: 'Bedrijfstakken', icon: Building2 },
+  { href: '/dashboard/anpr-bezoekers', label: 'Bezoekers', icon: Users },
+  { href: '/dashboard/anpr-tijdpatronen', label: 'Tijdpatronen', icon: Clock },
+  { href: '/dashboard/anpr-analyse', label: 'Analyse', icon: FlaskConical },
+];
+
+const SYSTEM_BUTTONS = [
+  { href: '/dashboard/externe-links', label: 'Externe links', icon: Link2 },
+  { href: '/dashboard/definities', label: 'Definities', icon: BookOpen },
+  { href: '/dashboard/data-volledigheid', label: 'Data volledigheid', icon: CheckCircle },
+  { href: '/dashboard/api', label: 'API', icon: Code2 },
+];
+
+function NavSection({ title, color, items }: { title: string; color: string; items: { href: string; label: string; icon: React.ComponentType<{ className?: string }> }[] }) {
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-wider font-semibold text-dmi-text/40 mb-2">{title}</p>
+      {items.map((btn) => {
+        const Icon = btn.icon;
+        return (
+          <Link key={btn.href} href={btn.href}>
+            <div
+              className="flex items-center gap-3 px-4 py-2 rounded-lg text-white text-sm font-medium hover:opacity-90 transition-opacity mb-1"
+              style={{ backgroundColor: color }}
+            >
+              <Icon className="w-4 h-4" />
+              {btn.label}
+            </div>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function IntroductiePage() {
   const municipality = useVesdiStore((s) => s.municipality);
   const years = useVesdiStore((s) => s.years);
+  const anprYear = useVesdiStore((s) => s.anprYear);
+  const hasAnpr = useHasAnprData();
   const sortedYears = [...years].sort((a, b) => a - b);
 
   return (
@@ -91,6 +136,22 @@ export default function IntroductiePage() {
 
               <div>
                 <h3 className="font-semibold text-dmi-text mb-1">
+                  ANPR cameraregistraties
+                </h3>
+                <p>
+                  Naast de VESDI-data ondersteunt dit dashboard ook ANPR-data (Automatic
+                  Number Plate Recognition). ANPR-camera&apos;s registreren kentekens van
+                  passerende voertuigen op vaste locaties binnen de gemeente. Door koppeling
+                  met het RDW-register worden per bezoek de voertuigcategorie (N1 bestelwagen,
+                  N2/N3 vrachtwagen) en emissieklasse (Euro 0-5, Euro 6, zero-emissie)
+                  bepaald. De ANPR-data geeft inzicht in het aantal bezoeken, de
+                  samenstelling van het wagenpark, herkomstprovincie, bedrijfstak (SBI) en
+                  tijdspatronen van vrachtverkeer.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-dmi-text mb-1">
                   Dataverzameling
                 </h3>
                 <p>
@@ -105,7 +166,8 @@ export default function IntroductiePage() {
                   en gecorrigeerd.
                 </p>
                 <p className="mt-3">
-                  Dit dashboard bevat geen bestelbusdata.
+                  Dit dashboard bevat geen bestelbusdata in de VESDI-sectie. De ANPR-data
+                  bevat wel bestelwagens (N1-categorie).
                 </p>
               </div>
 
@@ -114,11 +176,12 @@ export default function IntroductiePage() {
                   Verslagperiode
                 </h3>
                 <p>
-                  Voor het opstellen van dit dashboard is de VESDI data van{' '}
-                  {sortedYears.length > 0
-                    ? sortedYears.join(', ')
-                    : '...'}{' '}
-                  gebruikt.
+                  {sortedYears.length > 0 && (
+                    <>
+                      Voor de Wegvervoersenquete is data van{' '}
+                      {sortedYears.join(', ')} gebruikt.
+                    </>
+                  )}
                   {sortedYears.length > 1 && (
                     <> De bestanden betreffende{' '}
                     {sortedYears.slice(1).join(' en ')}{' '}
@@ -128,10 +191,9 @@ export default function IntroductiePage() {
                       {municipality?.name || 'Onbekend'} (gemeentecode{' '}
                       {municipality?.code || '????'})
                     </strong>{' '}
-                    bevindt. Om de data zo vergelijkbaar mogelijk te houden, zijn de bestanden
-                    van {sortedYears[0]} aangepast om ook aan deze voorwaarde te voldoen.</>
+                    bevindt.</>
                   )}
-                  {sortedYears.length <= 1 && (
+                  {sortedYears.length === 1 && (
                     <> De bestanden bevatten informatie over vervoersbewegingen waarvan de
                     los- en/of laadlocatie zich in de gemeente{' '}
                     <strong>
@@ -139,6 +201,9 @@ export default function IntroductiePage() {
                       {municipality?.code || '????'})
                     </strong>{' '}
                     bevindt.</>
+                  )}
+                  {hasAnpr && (
+                    <> De ANPR-data betreft het jaar {anprYear ?? '...'}.</>
                   )}
                 </p>
                 <p className="mt-3">
@@ -152,24 +217,18 @@ export default function IntroductiePage() {
         </div>
 
         {/* Navigation buttons */}
-        <div className="space-y-2">
-          <p className="text-sm font-semibold text-dmi-table-accent mb-3">
+        <div className="space-y-4">
+          <p className="text-sm font-semibold text-dmi-table-accent">
             Dashboard pagina&apos;s
           </p>
-          {NAV_BUTTONS.map((btn) => {
-            const Icon = btn.icon;
-            return (
-              <Link key={btn.href} href={btn.href}>
-                <div
-                  className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-white text-sm font-medium hover:opacity-90 transition-opacity mb-1"
-                  style={{ backgroundColor: btn.color }}
-                >
-                  <Icon className="w-4 h-4" />
-                  {btn.label}
-                </div>
-              </Link>
-            );
-          })}
+
+          <NavSection title="Wegvervoersenquete" color={DMI_COLORS.primary} items={WVE_BUTTONS} />
+
+          {hasAnpr && (
+            <NavSection title="ANPR" color={DMI_COLORS.orange} items={ANPR_BUTTONS} />
+          )}
+
+          <NavSection title="Systeem" color={DMI_COLORS.purple} items={SYSTEM_BUTTONS} />
         </div>
       </div>
     </div>
