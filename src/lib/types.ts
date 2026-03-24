@@ -134,6 +134,44 @@ export interface YearData {
   deelritten: DeelritRow[];
 }
 
+// ─── ANPR types ───
+
+export type AnprTableId = 'M1' | 'M2' | 'J1' | 'J2' | 'J3' | 'J5' | 'J6' | 'K1';
+
+export interface AnprRow {
+  europeseVoertuigcategorie: string;
+  aantalBezoeken: number;
+  periode?: string;
+  emissieklasse3?: string;
+  OgSBI08Groep?: string;
+  bedrijfsgrootte5Code?: string;
+  typeBezoeker3?: string;
+  rustNuts2?: string;
+  tijdstipDag6Code?: string;
+  weekdagCode?: string;
+  // Derived label fields (resolved from lookup)
+  sbiGroepLabel?: string;
+  bedrijfsgrootteLabel?: string;
+  provincieLabel?: string;
+  tijdstipDagLabel?: string;
+  weekdagLabel?: string;
+}
+
+export interface AnprTable {
+  id: AnprTableId;
+  rows: AnprRow[];
+  isDummy: boolean;
+}
+
+export interface AnprLookupData {
+  sbiGroep: LookupEntry[];
+  bedrijfsgrootte: LookupEntry[];
+  provincie: LookupEntry[];
+  locatie: LookupEntry[];
+  tijdstipDag: LookupEntry[];
+  weekdag: LookupEntry[];
+}
+
 // Detected file types
 export type DetectedFileType =
   | 'ZENDINGEN'
@@ -143,6 +181,8 @@ export type DetectedFileType =
   | 'VESDI_LOOKUP'
   | 'CODETABELLEN_GEMEENTE'
   | 'NUTS_SCHEMA'
+  | 'ANPR_CSV'
+  | 'ANPR_LOOKUP'
   | 'METADATA'
   | 'HERO_IMAGE'
   | 'UNKNOWN';
@@ -153,6 +193,8 @@ export interface DetectedFile {
   status: 'valid' | 'warning' | 'error';
   message: string;
   year?: number;
+  anprTableId?: AnprTableId;
+  isDummy?: boolean;
 }
 
 // Filter state

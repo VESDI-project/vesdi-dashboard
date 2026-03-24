@@ -30,7 +30,9 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const years = useVesdiStore((s) => s.years);
+  const anprTables = useVesdiStore((s) => s.anprTables);
   const hydrated = useVesdiStore((s) => s._hydrated);
+  const hasData = years.length > 0 || anprTables.size > 0;
 
   // Show loading while IndexedDB data is being rehydrated
   if (!hydrated) {
@@ -44,7 +46,7 @@ export default function DashboardLayout({
     );
   }
 
-  if (years.length === 0) {
+  if (!hasData) {
     return (
       <div className="min-h-screen bg-dmi-bg flex items-center justify-center p-6">
         <div className="text-center space-y-4">
@@ -53,7 +55,7 @@ export default function DashboardLayout({
             Geen data geladen
           </h2>
           <p className="text-sm text-dmi-text/60">
-            Upload eerst CBS-bestanden om het dashboard te bekijken
+            Upload eerst CBS- of ANPR-bestanden om het dashboard te bekijken
           </p>
           <Link href="/">
             <Button className="bg-dmi-orange hover:bg-dmi-orange/90 text-white">

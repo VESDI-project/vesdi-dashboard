@@ -11,12 +11,15 @@ import type {
   FilterState,
   DetectedFile,
   NutsMapping,
+  AnprTable,
+  AnprLookupData,
 } from './types';
 import { syncToServer } from './sync-client';
 import { parseCSV, readFileAsText, readFileAsArrayBuffer } from './parse-csv';
-import { parseLookupXlsx, parseCodetabellenXlsx, parseNutsSchema } from './parse-xlsx';
+import { parseLookupXlsx, parseCodetabellenXlsx, parseNutsSchema, parseAnprLookupXlsx } from './parse-xlsx';
 import { detectFileType } from './validate';
 import { transformZendingen, transformDeelritten } from './transform';
+import { transformAnprRows } from './anpr-transform';
 import { idbStorage } from './idb-storage';
 
 interface VesdiStore {
@@ -30,6 +33,11 @@ interface VesdiStore {
   heroImage: string | null;
   filters: FilterState;
 
+  // ANPR data (persisted)
+  anprTables: Map<string, AnprTable>;
+  anprLookup: AnprLookupData | null;
+  anprYear: number | null;
+
   // UI state (not persisted)
   detectedFiles: DetectedFile[];
   isProcessing: boolean;
@@ -40,6 +48,7 @@ interface VesdiStore {
   processFiles: (files: File[]) => Promise<void>;
   setFilter: (key: keyof FilterState, value: string | number | null) => void;
   resetFilters: () => void;
+  setAnprTables: (tables: Map<string, AnprTable>) => void;
   clear: () => void;
 }
 
@@ -53,6 +62,9 @@ interface PersistedState {
   years: number[];
   heroImage: string | null;
   filters: FilterState;
+  anprTables: Record<string, AnprTable>;
+  anprLookup: AnprLookupData | null;
+  anprYear: number | null;
 }
 
 const defaultFilters: FilterState = {
@@ -135,6 +147,9 @@ export const useVesdiStore = create<VesdiStore>()(
       municipality: null,
       years: [],
       heroImage: null,
+      anprTables: new Map(),
+      anprLookup: null,
+      anprYear: null,
       detectedFiles: [],
       isProcessing: false,
       processingStatus: '',
@@ -321,6 +336,34 @@ export const useVesdiStore = create<VesdiStore>()(
           }
         }
 
+        // Phase 5: Parse ANPR lookup
+        let anprLookup = get().anprLookup;
+        const anprLookupFile = detected.find((d) => d.type === 'ANPR_LOOKUP');
+        if (anprLookupFile) {
+          set({ processingStatus: 'ANPR lookup-tabel verwerken...' });
+          const buffer = await readFileAsArrayBuffer(anprLookupFile.file);
+          anprLookup = parseAnprLookupXlsx(buffer);
+          set({ anprLookup });
+        }
+
+        // Phase 6: Parse ANPR CSV files
+        const anprTables = new Map(get().anprTables);
+        let anprYear = get().anprYear;
+        const anprFiles = detected.filter((d) => d.type === 'ANPR_CSV');
+        for (const af of anprFiles) {
+          if (!af.anprTableId) continue;
+          set({ processingStatus: `ANPR bestand verwerken: ${af.file.name}...` });
+          const text = await readFileAsText(af.file);
+          const { data } = parseCSV<Record<string, unknown>>(text);
+          const rows = transformAnprRows(data, anprLookup);
+          anprTables.set(af.anprTableId, {
+            id: af.anprTableId,
+            rows,
+            isDummy: af.isDummy ?? false,
+          });
+          if (af.year) anprYear = af.year;
+        }
+
         // Handle hero image — manual upload takes priority, then auto-fetch from Wikipedia
         const heroFile = detected.find((d) => d.type === 'HERO_IMAGE');
         let heroImage = get().heroImage;
@@ -338,6 +381,9 @@ export const useVesdiStore = create<VesdiStore>()(
           years,
           municipality,
           heroImage,
+          anprTables,
+          anprLookup,
+          anprYear,
           isProcessing: false,
           processingStatus: 'Klaar!',
           filters: { ...defaultFilters, year: years[years.length - 1] || null },
@@ -369,6 +415,10 @@ export const useVesdiStore = create<VesdiStore>()(
         });
       },
 
+      setAnprTables: (tables: Map<string, AnprTable>) => {
+        set({ anprTables: tables });
+      },
+
       clear: () => {
         set({
           zendingenByYear: new Map(),
@@ -378,6 +428,9 @@ export const useVesdiStore = create<VesdiStore>()(
           municipality: null,
           years: [],
           heroImage: null,
+          anprTables: new Map(),
+          anprLookup: null,
+          anprYear: null,
           detectedFiles: [],
           isProcessing: false,
           processingStatus: '',
@@ -399,6 +452,9 @@ export const useVesdiStore = create<VesdiStore>()(
         years: state.years,
         heroImage: state.heroImage,
         filters: state.filters,
+        anprTables: Object.fromEntries(state.anprTables),
+        anprLookup: state.anprLookup,
+        anprYear: state.anprYear,
       }),
 
       // Convert serialized Records back to Maps on rehydration
@@ -419,6 +475,9 @@ export const useVesdiStore = create<VesdiStore>()(
                 Object.entries(ps.deelrittenByYear).map(([k, v]) => [Number(k), v])
               )
             : currentState.deelrittenByYear,
+          anprTables: ps.anprTables
+            ? new Map(Object.entries(ps.anprTables))
+            : currentState.anprTables,
           _hydrated: true,
         };
       },

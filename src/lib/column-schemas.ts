@@ -95,4 +95,20 @@ export const DETECTION_KEYS = {
   zendingen: 'zendingAantal',
   gemeenteCode: 'gemNaam',
   klasseCode: 'stadslogistieke_klasse',
+  anpr: 'aantalBezoeken',
 } as const;
+
+// ANPR table identification: sorted non-common columns → table ID
+// Common columns (excluded from signature): europeseVoertuigcategorie, aantalBezoeken
+import type { AnprTableId } from './types';
+
+export const ANPR_TABLE_SIGNATURES: Record<string, AnprTableId> = {
+  'emissieklasse3|periode': 'M1',
+  'OgSBI08Groep|periode': 'M2',
+  'OgSBI08Groep|typeBezoeker3': 'J1',
+  'bedrijfsgrootte5Code|typeBezoeker3': 'J2',
+  'rustNuts2|typeBezoeker3': 'J3',
+  'OgSBI08Groep|tijdstipDag6Code': 'J5',
+  'tijdstipDag6Code|weekdagCode': 'J6',
+  'OgSBI08Groep|bedrijfsgrootte5Code|periode': 'K1',
+};

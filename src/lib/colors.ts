@@ -73,6 +73,36 @@ export const PAGE_COLORS = {
     accent: DMI_COLORS.purple,
     text: '#ffffff',
   },
+  anprOverzicht: {
+    bg: DMI_COLORS.primary,
+    accent: DMI_COLORS.orange,
+    text: '#ffffff',
+    chartColors: [DMI_COLORS.primary, DMI_COLORS.orange, DMI_COLORS.teal, DMI_COLORS.mauve],
+  },
+  anprEmissie: {
+    bg: DMI_COLORS.primary,
+    accent: DMI_COLORS.teal,
+    text: '#ffffff',
+    chartColors: [DMI_COLORS.orange, DMI_COLORS.green, DMI_COLORS.red, DMI_COLORS.primary],
+  },
+  anprBedrijven: {
+    bg: '#2a4d6e',
+    accent: DMI_COLORS.orange,
+    text: '#ffffff',
+    chartColors: [DMI_COLORS.primary, DMI_COLORS.orange, DMI_COLORS.teal, DMI_COLORS.green, DMI_COLORS.mauve],
+  },
+  anprBezoekers: {
+    bg: DMI_COLORS.primary,
+    accent: DMI_COLORS.green,
+    text: '#ffffff',
+    chartColors: [DMI_COLORS.primary, DMI_COLORS.orange, DMI_COLORS.teal, DMI_COLORS.green],
+  },
+  anprTijdpatronen: {
+    bg: '#2a4d6e',
+    accent: DMI_COLORS.teal,
+    text: '#ffffff',
+    chartColors: [DMI_COLORS.primary, DMI_COLORS.orange, DMI_COLORS.teal, DMI_COLORS.green, DMI_COLORS.mauve],
+  },
 } as const;
 
 // Chart color sequences for multi-series charts

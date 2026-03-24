@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import type { LookupData, LookupEntry, NutsMapping } from './types';
+import type { LookupData, LookupEntry, NutsMapping, AnprLookupData } from './types';
 
 /**
  * Parse VESDI_lookup.xlsx → LookupData
@@ -162,11 +162,45 @@ export function parseNutsSchema(buffer: ArrayBuffer): NutsMapping[] {
 }
 
 /**
- * Detect if an XLSX file is the VESDI_lookup, codetabellen, or NUTS schema
+ * Parse Variabelen_ANPR.xlsx → AnprLookupData
+ * Sheets: sbiGroep13Code, bedrijfsgrootte5Code, provincieCode,
+ *         locatieCode, tijdstipDag6Code, weekdagCode
+ */
+export function parseAnprLookupXlsx(buffer: ArrayBuffer): AnprLookupData {
+  const workbook = XLSX.read(buffer, { type: 'array' });
+
+  const readSheet = (name: string): LookupEntry[] => {
+    const sheet = workbook.Sheets[name];
+    if (!sheet) return [];
+    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet);
+    return rows.map((row) => {
+      // ANPR sheets use 'code'+'omschrijving' or the sheet-specific column name
+      const keys = Object.keys(row);
+      const codeKey = keys.find((k) => k.toLowerCase().includes('code')) || keys[0];
+      const descKey = keys.find((k) => k.toLowerCase().includes('omschrijving') || k.toLowerCase().includes('label')) || keys[1];
+      return {
+        code: row[codeKey] as number | string,
+        omschrijving: String(row[descKey] || ''),
+      };
+    });
+  };
+
+  return {
+    sbiGroep: readSheet('sbiGroep13Code'),
+    bedrijfsgrootte: readSheet('bedrijfsgrootte5Code'),
+    provincie: readSheet('provincieCode'),
+    locatie: readSheet('locatieCode'),
+    tijdstipDag: readSheet('tijdstipDag6Code'),
+    weekdag: readSheet('weekdagCode'),
+  };
+}
+
+/**
+ * Detect if an XLSX file is the VESDI_lookup, codetabellen, NUTS schema, or ANPR lookup
  */
 export function detectXlsxType(
   buffer: ArrayBuffer
-): 'VESDI_LOOKUP' | 'CODETABELLEN_GEMEENTE' | 'NUTS_SCHEMA' | 'UNKNOWN' {
+): 'VESDI_LOOKUP' | 'CODETABELLEN_GEMEENTE' | 'NUTS_SCHEMA' | 'ANPR_LOOKUP' | 'UNKNOWN' {
   const workbook = XLSX.read(buffer, { type: 'array' });
   const sheetNames = workbook.SheetNames;
 
@@ -176,6 +210,11 @@ export function detectXlsxType(
 
   if (sheetNames.includes('Zendingen') || sheetNames.includes('Deelritten')) {
     return 'CODETABELLEN_GEMEENTE';
+  }
+
+  // ANPR lookup: has characteristic sheets like sbiGroep13Code or bedrijfsgrootte5Code
+  if (sheetNames.includes('sbiGroep13Code') || sheetNames.includes('bedrijfsgrootte5Code')) {
+    return 'ANPR_LOOKUP';
   }
 
   // Check for NUTS schema pattern

@@ -1,6 +1,6 @@
 import { parseCSV, readFileAsText, readFileAsArrayBuffer } from './parse-csv';
 import { detectXlsxType } from './parse-xlsx';
-import { DETECTION_KEYS } from './column-schemas';
+import { DETECTION_KEYS, ANPR_TABLE_SIGNATURES } from './column-schemas';
 import type { DetectedFile, DetectedFileType } from './types';
 
 /**
@@ -104,6 +104,30 @@ async function detectCsvType(file: File): Promise<DetectedFile> {
       };
     }
 
+    // ANPR data files (aantalBezoeken metric)
+    if (headers.includes(DETECTION_KEYS.anpr)) {
+      const nonCommon = headers
+        .filter((h) => h !== 'europeseVoertuigcategorie' && h !== 'aantalBezoeken')
+        .sort()
+        .join('|');
+      const tableId = ANPR_TABLE_SIGNATURES[nonCommon] ?? undefined;
+      const isDummy = file.name.toUpperCase().includes('DUMMY');
+      const yearMatch = file.name.match(/^(\d{4})_/);
+      const year = yearMatch ? Number(yearMatch[1]) : undefined;
+
+      return {
+        file,
+        type: 'ANPR_CSV',
+        status: isDummy ? 'warning' : 'valid',
+        message: isDummy
+          ? `ANPR tabel ${tableId ?? '?'} — DUMMY (${data.length.toLocaleString('nl-NL')} rijen)`
+          : `ANPR tabel ${tableId ?? '?'} (${data.length.toLocaleString('nl-NL')} rijen)`,
+        year,
+        anprTableId: tableId,
+        isDummy,
+      };
+    }
+
     return {
       file,
       type: 'UNKNOWN',
@@ -129,6 +153,7 @@ async function detectExcelType(file: File): Promise<DetectedFile> {
       VESDI_LOOKUP: { type: 'VESDI_LOOKUP', message: 'VESDI lookup-tabel' },
       CODETABELLEN_GEMEENTE: { type: 'CODETABELLEN_GEMEENTE', message: 'Gemeente codetabellen' },
       NUTS_SCHEMA: { type: 'NUTS_SCHEMA', message: 'NUTS-indeling schema' },
+      ANPR_LOOKUP: { type: 'ANPR_LOOKUP', message: 'ANPR variabelen lookup-tabel' },
     };
 
     const match = typeMap[xlsxType];

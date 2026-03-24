@@ -1,7 +1,7 @@
 'use client';
 
 import { FileDropZone } from '@/components/upload/file-drop-zone';
-import { FileText, Table, Image, BookOpen, ExternalLink } from 'lucide-react';
+import { FileText, Table, Image, BookOpen, ExternalLink, Camera } from 'lucide-react';
 
 const FILE_TYPES = [
   {
@@ -38,6 +38,20 @@ const FILE_TYPES = [
     desc: 'PNG/JPG voor het voorblad',
     color: 'text-dmi-green',
     bg: 'bg-dmi-green/8',
+  },
+  {
+    icon: Camera,
+    label: 'ANPR bezoekdata',
+    desc: 'CSV met ANPR-cameradata (bezoeken)',
+    color: 'text-dmi-gold',
+    bg: 'bg-dmi-gold/8',
+  },
+  {
+    icon: FileText,
+    label: 'ANPR Variabelen',
+    desc: 'XLSX met ANPR lookup-tabellen',
+    color: 'text-dmi-gold',
+    bg: 'bg-dmi-gold/8',
   },
 ];
 

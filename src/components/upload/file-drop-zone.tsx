@@ -9,6 +9,45 @@ import { useVesdiStore } from '@/lib/store';
 import type { DetectedFile } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 
+const ACCEPTED_EXTENSIONS = new Set(['.csv', '.xlsx', '.xls', '.docx', '.png', '.jpg', '.jpeg']);
+
+/** Recursively extract files from dropped items (supports folders) */
+async function extractFilesFromItems(items: DataTransferItemList): Promise<File[]> {
+  const files: File[] = [];
+  const entries: FileSystemEntry[] = [];
+
+  for (let i = 0; i < items.length; i++) {
+    const entry = items[i].webkitGetAsEntry?.();
+    if (entry) entries.push(entry);
+  }
+
+  async function readEntry(entry: FileSystemEntry): Promise<void> {
+    if (entry.isFile) {
+      const file = await new Promise<File>((resolve, reject) => {
+        (entry as FileSystemFileEntry).file(resolve, reject);
+      });
+      const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+      if (ACCEPTED_EXTENSIONS.has(ext)) {
+        files.push(file);
+      }
+    } else if (entry.isDirectory) {
+      const reader = (entry as FileSystemDirectoryEntry).createReader();
+      const childEntries = await new Promise<FileSystemEntry[]>((resolve, reject) => {
+        reader.readEntries(resolve, reject);
+      });
+      for (const child of childEntries) {
+        await readEntry(child);
+      }
+    }
+  }
+
+  for (const entry of entries) {
+    await readEntry(entry);
+  }
+
+  return files;
+}
+
 const STATUS_STYLES = {
   valid: 'bg-dmi-green/10 text-dmi-green border-dmi-green/30',
   warning: 'bg-dmi-gold/10 text-dmi-gold border-dmi-gold/30',
@@ -37,6 +76,16 @@ export function FileDropZone() {
     async (e: React.DragEvent) => {
       e.preventDefault();
       setIsDragging(false);
+      // Support folders via DataTransferItem.webkitGetAsEntry()
+      const items = e.dataTransfer.items;
+      if (items && items.length > 0) {
+        const allFiles = await extractFilesFromItems(items);
+        if (allFiles.length > 0) {
+          await processFiles(allFiles);
+          return;
+        }
+      }
+      // Fallback: plain file list
       const files = Array.from(e.dataTransfer.files);
       if (files.length > 0) {
         await processFiles(files);
@@ -55,9 +104,10 @@ export function FileDropZone() {
     [processFiles]
   );
 
-  const hasData = years.length > 0;
+  const anprTables = useVesdiStore((s) => s.anprTables);
+  const hasData = years.length > 0 || anprTables.size > 0;
   const hasNewFiles = detectedFiles.some(
-    (f) => f.type === 'ZENDINGEN' || f.type === 'DEELRITTEN'
+    (f) => f.type === 'ZENDINGEN' || f.type === 'DEELRITTEN' || f.type === 'ANPR_CSV'
   );
 
   // Show loading skeleton while hydrating from IndexedDB
@@ -115,7 +165,7 @@ export function FileDropZone() {
         }}
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
-        onClick={() => document.getElementById('file-input')?.click()}
+        onClick={(e) => { e.stopPropagation(); document.getElementById('file-input')?.click(); }}
       >
         <input
           id="file-input"
@@ -124,6 +174,14 @@ export function FileDropZone() {
           className="hidden"
           accept=".csv,.xlsx,.xls,.docx,.png,.jpg,.jpeg"
           onChange={handleFileInput}
+        />
+        <input
+          id="folder-input"
+          type="file"
+          multiple
+          className="hidden"
+          onChange={handleFileInput}
+          ref={(el) => { if (el) el.setAttribute('webkitdirectory', ''); }}
         />
 
         <div className="text-center">
@@ -143,16 +201,23 @@ export function FileDropZone() {
               ? 'Bestanden loslaten om te uploaden'
               : hasData
                 ? 'Extra bestanden toevoegen'
-                : 'Sleep CBS-bestanden hierheen'}
+                : 'Sleep CBS- of ANPR-bestanden hierheen'}
           </h3>
           <p className="text-sm text-dmi-text/50">
             of{' '}
             <span className="text-dmi-orange font-medium underline underline-offset-2">
-              klik om te bladeren
+              klik om bestanden te selecteren
+            </span>
+            {' '}&middot;{' '}
+            <span
+              className="text-dmi-primary font-medium underline underline-offset-2 cursor-pointer"
+              onClick={(e) => { e.stopPropagation(); document.getElementById('folder-input')?.click(); }}
+            >
+              map selecteren
             </span>
           </p>
           <p className="text-xs text-dmi-text/35 mt-2">
-            CSV &middot; XLSX &middot; PNG / JPG
+            CSV &middot; XLSX &middot; PNG / JPG &middot; mappen worden recursief gelezen
           </p>
         </div>
       </div>
@@ -165,15 +230,27 @@ export function FileDropZone() {
         </div>
       )}
 
-      {/* Detected files list */}
+      {/* Detected files list — clustered by type and year */}
       {detectedFiles.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <h4 className="font-semibold text-xs text-dmi-text/50 uppercase tracking-wide">
             Gedetecteerde bestanden ({detectedFiles.length})
           </h4>
-          <div className="space-y-1.5 max-h-[240px] overflow-y-auto pr-1">
-            {detectedFiles.map((df, i) => (
-              <FileResultCard key={i} detected={df} />
+          <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+            {clusterFiles(detectedFiles).map((group) => (
+              <div key={group.label}>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-dmi-text/40">
+                    {group.label}
+                  </span>
+                  <div className="flex-1 border-t border-dmi-text/10" />
+                </div>
+                <div className="space-y-1.5">
+                  {group.files.map((df, i) => (
+                    <FileResultCard key={i} detected={df} />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         </div>
@@ -222,6 +299,46 @@ export function FileDropZone() {
       )}
     </div>
   );
+}
+
+interface FileGroup {
+  label: string;
+  sortKey: string;
+  files: DetectedFile[];
+}
+
+function clusterFiles(files: DetectedFile[]): FileGroup[] {
+  const groups = new Map<string, FileGroup>();
+
+  for (const df of files) {
+    const isAnpr = df.type === 'ANPR_CSV' || df.type === 'ANPR_LOOKUP';
+    const isVesdi = df.type === 'ZENDINGEN' || df.type === 'DEELRITTEN' || df.type === 'CODETABEL_GEMEENTE' || df.type === 'CODETABEL_KLASSE' || df.type === 'VESDI_LOOKUP' || df.type === 'CODETABELLEN_GEMEENTE' || df.type === 'NUTS_SCHEMA';
+
+    let category: string;
+    if (isAnpr) category = 'ANPR';
+    else if (isVesdi) category = 'VESDI Wegvervoersenquete';
+    else category = 'Overig';
+
+    const year = df.year ?? 0;
+    // Try to extract municipality from filename for VESDI files
+    let municipality = '';
+    if (isVesdi) {
+      const match = df.file.name.match(/_PC6_([A-Za-z\s''-]+?)_\d{4}/);
+      if (match) municipality = match[1];
+    }
+
+    const key = `${category}|${year || ''}|${municipality}`;
+    const yearStr = year ? ` ${year}` : '';
+    const munStr = municipality ? ` — ${municipality}` : '';
+    const label = `${category}${yearStr}${munStr}`;
+
+    if (!groups.has(key)) {
+      groups.set(key, { label, sortKey: `${category}|${String(year).padStart(4, '0')}|${municipality}`, files: [] });
+    }
+    groups.get(key)!.files.push(df);
+  }
+
+  return [...groups.values()].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
 }
 
 function FileResultCard({ detected }: { detected: DetectedFile }) {

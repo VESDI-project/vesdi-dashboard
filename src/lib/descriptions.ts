@@ -29,6 +29,16 @@ export const PAGE_DESCRIPTIONS = {
     'Overzicht van de datakwaliteit en volledigheid per veld in de geladen bestanden.',
   api:
     'REST API-documentatie op basis van OpenAPI 3.0.3. Endpoints voor zendingen, deelritten, aggregaties en metadata.',
+  anprOverzicht:
+    'Overzicht van vrachtverkeerbezoeken op basis van ANPR-cameraregistraties: aantallen, voertuigcategorieen en emissieklassen.',
+  anprEmissie:
+    'Maandelijkse trends in emissieklassen en voertuigcategorieen op basis van ANPR-data.',
+  anprBedrijven:
+    'Analyse van bezoeken per bedrijfstak (SBI-groep) en bedrijfsgrootte.',
+  anprBezoekers:
+    'Kenmerken van bezoekers: type bezoeker, bedrijfsgrootte en herkomstprovincie.',
+  anprTijdpatronen:
+    'Dag- en weekpatronen van vrachtverkeerbezoeken.',
 } as const;
 
 export const KPI_TOOLTIPS = {
@@ -87,4 +97,28 @@ export const CHART_TOOLTIPS = {
     'Aantal zendingen/deelritten naar de gemeente, gegroepeerd per NUTS3-herkomstregio.',
   nuts3Vanuit:
     'Aantal zendingen/deelritten vanuit de gemeente, gegroepeerd per NUTS3-bestemmingsregio.',
+  anprVoertuigcategorie:
+    'Verdeling van ANPR-bezoeken over Europese voertuigcategorieen (N1=licht, N2=middelzwaar, N3=zwaar).',
+  anprEmissieklasse:
+    'Verdeling van bezoeken over emissieklassen: Euro 0-5, Euro 6 en zero-emissie.',
+  anprMaandelijkBezoeken:
+    'Aantal bezoeken per maand, uitgesplitst naar emissieklasse.',
+  anprMaandelijkVoertuig:
+    'Aantal bezoeken per maand, uitgesplitst naar voertuigcategorie.',
+  anprEmissiePerVoertuig:
+    'Emissieklasseverdeling per voertuigcategorie.',
+  anprEuro6Trend:
+    'Maandelijks percentage Euro-6 en zero-emissie bezoeken.',
+  anprSbiGroep:
+    'Verdeling van bezoeken over bedrijfstakken (SBI-groep).',
+  anprBedrijfsgrootte:
+    'Verdeling van bezoeken over bedrijfsgroottes.',
+  anprBezoekersType:
+    'Verdeling van bezoeken naar type bezoeker: eenmalig, 2-12 keer of >12 keer per jaar.',
+  anprHerkomstProvincie:
+    'Verdeling van bezoeken naar rustprovincie van het voertuig.',
+  anprTijdstip:
+    'Verdeling van bezoeken over zes dagdelen.',
+  anprWeekdag:
+    'Verdeling van bezoeken over de dagen van de week.',
 } as const;
