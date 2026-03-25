@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { PageHeader } from '@/components/layout/page-header';
+import { DataSourceFooter } from '@/components/layout/data-source-footer';
 import { PAGE_COLORS } from '@/lib/colors';
 import { PAGE_DESCRIPTIONS } from '@/lib/descriptions';
 import { Card } from '@/components/ui/card';
@@ -180,6 +181,8 @@ export default function RoutekaartPage() {
           />
         </div>
       </div>
+
+      <DataSourceFooter />
     </div>
   );
 }

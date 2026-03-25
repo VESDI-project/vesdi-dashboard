@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { PageHeader } from '@/components/layout/page-header';
+import { DataSourceFooter } from '@/components/layout/data-source-footer';
 import { FilterBar } from '@/components/layout/filter-bar';
 import { KPICard } from '@/components/layout/kpi-card';
 import { HorizontalBarChart } from '@/components/charts/horizontal-bar-chart';
@@ -103,6 +104,8 @@ export default function NationaleZendingenPage() {
           />
         </div>
       </div>
+
+      <DataSourceFooter />
     </div>
   );
 }

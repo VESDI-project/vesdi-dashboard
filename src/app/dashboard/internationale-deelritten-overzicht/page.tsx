@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { PageHeader } from '@/components/layout/page-header';
+import { DataSourceFooter } from '@/components/layout/data-source-footer';
 import { FilterBar } from '@/components/layout/filter-bar';
 import { KPICard } from '@/components/layout/kpi-card';
 import { PAGE_COLORS, DMI_COLORS } from '@/lib/colors';
@@ -103,6 +104,8 @@ export default function InternationaleDeelrittenOverzichtPage() {
           tooltip={KPI_TOOLTIPS.aantalDeelritten}
         />
       </div>
+
+      <DataSourceFooter />
     </div>
   );
 }

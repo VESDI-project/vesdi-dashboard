@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { PageHeader } from '@/components/layout/page-header';
+import { DataSourceFooter } from '@/components/layout/data-source-footer';
 import { DualAxisLineChart } from '@/components/charts/dual-axis-line-chart';
 import { PercentageLineChart } from '@/components/charts/percentage-line-chart';
 import { DataTable } from '@/components/charts/data-table';
@@ -154,6 +155,8 @@ export default function TrendsPage() {
           titleTooltip={CHART_TOOLTIPS.deelrittenPerKlasse}
         />
       </div>
+
+      <DataSourceFooter />
     </div>
   );
 }

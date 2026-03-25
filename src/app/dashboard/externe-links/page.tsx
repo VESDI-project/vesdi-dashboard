@@ -4,38 +4,39 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Card } from '@/components/ui/card';
 import { PAGE_COLORS } from '@/lib/colors';
 import { PAGE_DESCRIPTIONS } from '@/lib/descriptions';
-import { ExternalLink } from 'lucide-react';
+import { Building2, BarChart3, FolderOpen, Package, Target, ExternalLink } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
-const LINKS = [
+const LINKS: { title: string; description: string; url: string; icon: LucideIcon }[] = [
   {
     title: 'DMI Ecosysteem',
     description: 'Dutch Metropolitan Innovations - platform voor duurzame stedelijke logistiek',
     url: 'https://dmi-ecosysteem.nl',
-    icon: '🏙️',
+    icon: Building2,
   },
   {
     title: 'CBS VESDI dossier',
     description: 'Centraal Bureau voor de Statistiek - VESDI dataplatform en documentatie',
     url: 'https://www.cbs.nl/nl-nl/dossier/vesdi',
-    icon: '📊',
+    icon: BarChart3,
   },
   {
     title: 'VESDI achtergrond',
     description: 'Informatie over het VESDI-project en microdatabestanden',
     url: 'https://www.cbs.nl/nl-nl/onze-diensten/maatwerk-en-microdata/microdata-zelf-onderzoek-doen/microdatabestanden/vesdi-verkeersintensiteiten-stedelijke-distributie',
-    icon: '📁',
+    icon: FolderOpen,
   },
   {
     title: 'Post- en pakketmonitor',
     description: 'ACM monitor voor post- en pakketstromen in Nederland',
     url: 'https://www.acm.nl/nl/onderwerpen/telecommunicatie/post/post-en-pakketmonitor',
-    icon: '📦',
+    icon: Package,
   },
   {
     title: 'VESDI maatwerkverzoeken',
     description: 'Aanvullende VESDI-data op maat aanvragen bij het CBS',
     url: 'https://www.cbs.nl/nl-nl/onze-diensten/maatwerk-en-microdata/maatwerk',
-    icon: '🎯',
+    icon: Target,
   },
 ];
 
@@ -57,7 +58,7 @@ export default function ExterneLinkPage() {
             rel="noopener noreferrer"
           >
             <Card className="p-6 h-full hover:shadow-lg transition-shadow cursor-pointer group">
-              <div className="text-4xl mb-4">{link.icon}</div>
+              <link.icon className="w-8 h-8 mb-4 text-dmi-text/60" />
               <h3 className="font-semibold text-dmi-text mb-2 group-hover:text-dmi-purple transition-colors">
                 {link.title}
               </h3>
