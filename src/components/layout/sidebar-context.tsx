@@ -15,7 +15,7 @@ const SidebarContext = createContext<SidebarContextValue>({
 });
 
 export function SidebarProvider({ children }: { children: ReactNode }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   return (
     <SidebarContext.Provider value={{ expanded, setExpanded, toggle: () => setExpanded((v) => !v) }}>
       {children}
