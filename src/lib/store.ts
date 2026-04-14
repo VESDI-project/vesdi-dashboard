@@ -14,7 +14,6 @@ import type {
   AnprTable,
   AnprLookupData,
 } from './types';
-import { syncToServer } from './sync-client';
 import { parseCSV, readFileAsText, readFileAsArrayBuffer } from './parse-csv';
 import { parseLookupXlsx, parseCodetabellenXlsx, parseNutsSchema, parseAnprLookupXlsx } from './parse-xlsx';
 import { detectFileType } from './validate';
@@ -388,18 +387,6 @@ export const useVesdiStore = create<VesdiStore>()(
           processingStatus: 'Klaar!',
           filters: { ...defaultFilters, year: years[years.length - 1] || null },
         });
-
-        // Fire-and-forget sync to PostgreSQL (if server is available)
-        if (municipality) {
-          syncToServer({
-            municipality,
-            years,
-            zendingenByYear: Object.fromEntries(zendingenByYear),
-            deelrittenByYear: Object.fromEntries(deelrittenByYear),
-            lookup: get().lookup,
-            nutsMapping: get().nutsMapping,
-          }).catch((err) => console.warn('[sync] Server sync skipped:', err?.message || err));
-        }
       },
 
       setFilter: (key, value) => {

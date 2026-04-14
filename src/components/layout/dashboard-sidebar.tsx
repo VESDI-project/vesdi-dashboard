@@ -20,7 +20,6 @@ import {
   CheckCircle,
   PanelLeftClose,
   PanelLeftOpen,
-  Code2,
   Camera,
   Zap,
   Building2,
@@ -55,7 +54,6 @@ const SYSTEM_NAV_ITEMS = [
   { href: '/dashboard/externe-links', icon: Link2, label: 'Externe links', desc: 'CBS, VESDI en DMI bronnen', color: DMI_COLORS.purple },
   { href: '/dashboard/definities', icon: BookOpen, label: 'Definities', desc: 'Begrippen en classificaties', color: DMI_COLORS.green },
   { href: '/dashboard/data-volledigheid', icon: CheckCircle, label: 'Data volledigheid', desc: 'Dekking per kolom en jaar', color: DMI_COLORS.green },
-  { href: '/dashboard/api', icon: Code2, label: 'API', desc: 'REST API-documentatie (OpenAPI)', color: DMI_COLORS.purple },
 ];
 
 const ANPR_NAV_ITEMS = [

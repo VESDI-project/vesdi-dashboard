@@ -58,6 +58,3 @@ DMI-stylesheet*.pdf
 /routing/
 /screenshots/
 public/DMI-LOGO RGB/
-
-# Prisma generated client
-src/generated/

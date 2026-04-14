@@ -19,7 +19,6 @@ import {
   Link2,
   BookOpen,
   CheckCircle,
-  Code2,
   Camera,
   Zap,
   Building2,
@@ -53,7 +52,6 @@ const SYSTEM_BUTTONS = [
   { href: '/dashboard/externe-links', label: 'Externe links', icon: Link2 },
   { href: '/dashboard/definities', label: 'Definities', icon: BookOpen },
   { href: '/dashboard/data-volledigheid', label: 'Data volledigheid', icon: CheckCircle },
-  { href: '/dashboard/api', label: 'API', icon: Code2 },
 ];
 
 function NavSection({ title, color, items }: { title: string; color: string; items: { href: string; label: string; icon: React.ComponentType<{ className?: string }> }[] }) {
