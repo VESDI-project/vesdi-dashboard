@@ -9,9 +9,8 @@ Municipal dashboard for visualizing CBS VESDI freight transport data (zendingen 
 - **Charts:** Recharts 3
 - **Maps:** Leaflet + React-Leaflet 5
 - **Routing:** OpenRouteService (self-hosted at ors.transportbeat.nl, proxied via /api/ors)
-- **State:** Zustand 5 with IndexedDB persistence
+- **State:** Zustand 5 with IndexedDB persistence (no server-side database)
 - **Data parsing:** PapaParse (CSV), xlsx (Excel)
-- **Database (optional):** Prisma + PostgreSQL for server-side persistence
 
 ## Dev Commands
 ```bash
@@ -27,8 +26,7 @@ src/
   app/                          # Next.js App Router pages
     api/
       ors/                      # ORS proxy API route (avoids CORS)
-      v1/                       # REST API endpoints (OpenAPI)
-    dashboard/                  # 14 dashboard pages + layout
+    dashboard/                  # 13 dashboard pages + layout (plus 6 ANPR pages)
       voorblad/                 # Cover page with hero image + DMI logo
       introductie/              # Introduction with CBS/VESDI background text
       trends/                   # Multi-year trend charts
@@ -43,7 +41,6 @@ src/
       externe-links/            # External links (DMI, CBS VESDI)
       definities/               # Glossary of terms
       data-volledigheid/        # Data completeness bars per column/year
-      api/                      # API documentation page (OpenAPI)
   components/
     charts/    # Recharts wrappers (donut, bar, line, table)
     layout/    # Expandable sidebar, filter bar, KPI card, page header, sidebar context
@@ -66,8 +63,6 @@ src/
     country-codes.ts # NUTS3 → country mapping
     idb-storage.ts   # IndexedDB storage adapter for Zustand
     descriptions.ts  # Dutch tooltip/description texts
-    api/             # API middleware, OpenAPI spec, response helpers
-    db/              # Prisma client, queries, sync logic
 public/
   geo/         # GeoJSON + centroids: pc4, pc6 (464K), nuts3 (1.5K)
   images/      # DMI logos (SVG)
@@ -102,5 +97,4 @@ Zone columns are optional — the app handles missing zone data gracefully.
 ```
 NEXT_PUBLIC_ORS_API_KEY=    # ORS API key (X-API-Key header, for route map)
 NEXT_PUBLIC_ORS_BASE_URL=   # ORS base URL (default: https://ors.transportbeat.nl/ors)
-DATABASE_URL=               # PostgreSQL connection string (optional, for server-side persistence)
 ```
